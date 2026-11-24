@@ -64,7 +64,7 @@
   "fbStateUtility": {
     "enabled": false,
     "product": "C3C FBState Utility",
-    "status": "specification_only_source_project_required",
+    "status": "core_and_app_facing_controller_implemented_android_ui_integration_pending",
     "operations": [
       "manual_import",
       "validate",
@@ -107,7 +107,7 @@
   },
   "deviceIdentityManager": {
     "enabled": false,
-    "status": "core_implemented_android_webview_integration_pending",
+    "status": "core_and_app_facing_controller_implemented_webview_adapter_integration_pending",
     "supportedValues": [
       "userAgent",
       "acceptLanguage",
