@@ -639,7 +639,7 @@ class MainActivity : Activity() {
                                     3 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "all_sites")
                                 }
                                 edit.apply()
-                                if (mode == 1 && web.visibility == View.VISIBLE) web.reload()
+                                if ((mode == 1 || mode == 2 || mode == 3 || mode == 0) && web.visibility == View.VISIBLE) web.reload()
                                 Toast.makeText(this, "Site access updated", Toast.LENGTH_SHORT).show()
                                 showExtensions()
                             }.setNegativeButton("Cancel", null).show()
