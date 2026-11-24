@@ -616,11 +616,10 @@ class MainActivity : Activity() {
                 .setPositiveButton("OK", null).show()
             return
         }
-        val labels = installed.map { dir ->
-            try {
-                val manifest = org.json.JSONObject(File(dir, "manifest.json").readText())
-                "${manifest.optString("name", dir.name)} • v${manifest.optString("version", "?")}"
-            } catch (_: Exception) { dir.name }
+        val summaries = installed.map { dir -> runCatching { ExtensionManagerPolicy.inspect(dir) }.getOrNull() }
+        val labels = installed.mapIndexed { index, dir ->
+            val info = summaries[index]
+            if (info == null) "${dir.name} • Error" else "${info.name} • v${info.version} • ${if (info.compatible) "Partial runtime" else "Incompatible"}"
         }.toTypedArray()
         AlertDialog.Builder(this).setTitle("Installed extensions")
             .setItems(labels) { _, which ->
@@ -628,14 +627,22 @@ class MainActivity : Activity() {
                 val extensionId = dir.name
                 val enabledKey = LightweightExtensionRuntime.enabledKey(extensionId)
                 val enabled = prefs.getBoolean(enabledKey, false)
-                AlertDialog.Builder(this).setTitle(labels[which])
-                    .setMessage("Limited content-script runtime: scripts execute in the webpage context. No Chrome APIs, background workers or isolated worlds. Site access is separately controlled.")
-                    .setPositiveButton(if (enabled) "Disable" else "Enable") { _, _ ->
+                val info = summaries[which]
+                val requested = info?.requestedPermissions?.joinToString("\n") ?: "Could not parse package metadata"
+                val hostPatterns = info?.hostPatterns?.joinToString("\n") ?: "None"
+                val status = if (info == null) "Error: package metadata could not be read" else if (info.compatible) "Partial: top-frame page-context content scripts only" else "Incompatible: ${info.incompatibility}"
+                val detailText = buildString {
+                    append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
+                    append("Storage: ${info?.storageBytes ?: 0} bytes\nSHA-256 (manifest): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
+                }
+                val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
+                    .setMessage(detailText)
+                    .setPositiveButton(if (enabled) "Disable" else "Enable", if (!enabled && info?.compatible != true) null else { _, _ ->
                         prefs.edit().putBoolean(enabledKey, !enabled).apply()
                         Toast.makeText(this, if (enabled) "Extension disabled" else "Extension enabled", Toast.LENGTH_SHORT).show()
                         if (web.visibility == View.VISIBLE) web.reload()
                         showExtensions()
-                    }.setNeutralButton("Site access") { _, _ ->
+                    }).setNeutralButton("Site access") { _, _ ->
                         val modes = arrayOf("Block all sites", "On click — current site once", "Selected sites — add current site", "All matching sites")
                         val currentOrigin = try { val u = Uri.parse(currentUrl); "${u.scheme}://${u.authority}" } catch (_: Exception) { "" }
                         AlertDialog.Builder(this).setTitle("Site access")
@@ -676,7 +683,15 @@ class MainActivity : Activity() {
                         dir.deleteRecursively()
                         Toast.makeText(this, "Extension removed", Toast.LENGTH_SHORT).show()
                         showExtensions()
-                    }.show()
+                    }.setNeutralButton("Clear data") { _, _ ->
+                        val cleared = dir.listFiles()?.filter { it.name != "manifest.json" && it.name != "content.js" }?.sumOf { file ->
+                            val size = if (file.isFile) file.length() else file.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+                            file.deleteRecursively()
+                            size
+                        } ?: 0L
+                        Toast.makeText(this, "Extension-owned data cleared ($cleared bytes)", Toast.LENGTH_SHORT).show()
+                        showExtensions()
+                    }.show().getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = enabled || info?.compatible == true
             }.setNegativeButton("Close", null).show()
     }
 
