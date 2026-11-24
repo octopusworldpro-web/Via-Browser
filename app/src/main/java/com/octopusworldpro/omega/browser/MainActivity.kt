@@ -282,7 +282,7 @@ class MainActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { requestSuggestions(s?.toString().orEmpty()) }
             override fun afterTextChanged(s: Editable?) {}
         })
-        val searchParams = LinearLayout.LayoutParams(-1, 60); searchParams.topMargin = 34; page.addView(search, searchParams)
+        val searchParams = LinearLayout.LayoutParams(-1, 70); searchParams.topMargin = 34; page.addView(search, searchParams)
         val grid = GridLayout(this).apply { columnCount = 3; useDefaultMargins = false; alignmentMode = GridLayout.ALIGN_BOUNDS }
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
@@ -307,7 +307,7 @@ class MainActivity : Activity() {
                 isFocusable = true
                 setOnClickListener { item.third() }
             }
-            val lp = GridLayout.LayoutParams().apply { width = 0; height = 116; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
+            val lp = GridLayout.LayoutParams().apply { width = 0; height = 140; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
             grid.addView(tile, lp)
         }
         val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 20; page.addView(grid, gridParams)
