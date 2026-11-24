@@ -329,7 +329,7 @@ class MainActivity : Activity() {
         val grid = GridLayout(this).apply { columnCount = 3; useDefaultMargins = false; alignmentMode = GridLayout.ALIGN_BOUNDS }
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
-            Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "C3C FBState", { showFbState() }),
+            Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "FBState Utility", { showFbState() }),
             Triple("f", "Facebook", { loadAddress("https://www.facebook.com/") }),
             Triple("◎", "Instagram", { loadAddress("https://www.instagram.com/") }),
             Triple("◉", "IG Cookie Check", { showInstagramCookieUtility() }),
@@ -385,7 +385,7 @@ class MainActivity : Activity() {
     }
 
     private fun showMainMenu() {
-        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "FBstat Utility", "Device Identity Manager", "Settings", "About")
+        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "FBState Utility", "Device Identity Manager", "Settings", "About")
         AlertDialog.Builder(this).setTitle("OmegA Browser").setItems(options) { _, which ->
             when (which) {
                 0 -> newTab(); 1 -> showTabs(); 2 -> showBookmarks(); 3 -> showHistory()
@@ -594,7 +594,7 @@ class MainActivity : Activity() {
 
     private fun showFbState() {
         AlertDialog.Builder(this)
-            .setTitle("FBstat Utility")
+            .setTitle("FBState Utility")
             .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; values are masked and never uploaded.")
             .setPositiveButton("Continue") { _, _ -> showFbStateOptions() }
             .setNegativeButton("Close", null)
@@ -608,7 +608,7 @@ class MainActivity : Activity() {
             "Import Netscape file",
             "Export imported FBState"
         )
-        AlertDialog.Builder(this).setTitle("FBstat Utility")
+        AlertDialog.Builder(this).setTitle("FBState Utility")
             .setItems(options) { _, which ->
                 when (which) {
                     1 -> showCookieHeaderImport()
