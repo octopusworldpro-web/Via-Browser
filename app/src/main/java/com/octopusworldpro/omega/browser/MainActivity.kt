@@ -34,7 +34,10 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= 21) {\n            window.statusBarColor = bg\n            window.navigationBarColor = bg\n        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            window.statusBarColor = bg
+            window.navigationBarColor = bg
+        }
         buildShell()
         showHome()
     }
