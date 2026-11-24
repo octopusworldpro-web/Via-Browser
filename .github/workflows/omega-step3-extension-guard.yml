@@ -1,0 +1,42 @@
+name: OmegA Browser — Step 3 Extension Runtime Safety Gate
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'config/extension-manager.json'
+      - 'AUDIT/STEP-03-EXTENSION-RUNTIME.md'
+      - 'AUDIT/STEP-05-EXTENSION-MANAGER.md'
+      - '.github/workflows/omega-step3-extension-guard.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  extension-safety-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate runtime gate and least-privilege defaults
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cfg = json.loads(Path('config/extension-manager.json').read_text())
+          ext = cfg['extensionManager']
+          assert ext['enabled'] is False
+          assert ext['runtimeAvailable'] is False
+          assert ext['chromeExtensionExecution'] is False
+          assert ext['webStoreInstallEnabled'] is False
+          assert ext['runtimeAdapterRequiredForExecution'] is True
+          assert set(ext['plannedImportSources']) == {'local_zip', 'local_crx', 'web_store'}
+          sec = ext['security']
+          for key in ('executeDuringImport', 'autoGrantPermissions', 'exposeCookiesByDefault',
+                      'exposePasswordsByDefault', 'exposeHistoryByDefault'):
+              assert sec[key] is False, f'Unsafe default: {key}'
+          for key in ('rejectPathTraversal', 'rejectSymlinks', 'requireArchiveLimits',
+                      'requireAtomicUpdates'):
+              assert sec[key] is True, f'Missing security requirement: {key}'
+          assert ext['preserveExistingUserscripts'] is True
+          print('PASS: extension runtime is safely gated; import sources are marked planned only')
+          PY
