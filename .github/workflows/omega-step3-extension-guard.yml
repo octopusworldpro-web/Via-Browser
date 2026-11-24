@@ -9,6 +9,8 @@ on:
       - 'AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md'
       - 'utilities/fbstate/**'
       - 'utilities/device-identity/**'
+      - 'utilities/android-integration/**'
+      - 'AUDIT/STEP-13-APP-FACING-UTILITY-CONTROLLERS.md'
       - 'AUDIT/STEP-12-DEVICE-IDENTITY-CORE.md'
       - 'README.md'
       - '.github/workflows/omega-step3-extension-guard.yml'
@@ -73,3 +75,5 @@ jobs:
         run: node --test utilities/fbstate/fbstate.test.js
       - name: Run Device Identity profile tests
         run: node --test utilities/device-identity/device-identity.test.js
+      - name: Run app-facing utility controller tests
+        run: node --test utilities/android-integration/feature-controller.test.js
