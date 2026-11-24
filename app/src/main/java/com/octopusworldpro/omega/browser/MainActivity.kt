@@ -146,6 +146,28 @@ class MainActivity : Activity() {
                 settings.safeBrowsingEnabled = true
             }
             webViewClient = object : WebViewClient() {
+                @Suppress("DEPRECATION")
+                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                    val target = url ?: return true
+                    if (BrowserCorePolicy.isWebNavigation(target)) return false
+                    val scheme = BrowserCorePolicy.externalScheme(target) ?: return true
+                    if (scheme !in setOf("mailto", "tel", "sms", "geo")) return true
+                    return try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(target)))
+                        true
+                    } catch (_: Exception) { true }
+                }
+                override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+                    if (Build.VERSION.SDK_INT < 21) return false
+                    val target = request?.url?.toString() ?: return true
+                    if (BrowserCorePolicy.isWebNavigation(target)) return false
+                    val scheme = BrowserCorePolicy.externalScheme(target) ?: return true
+                    if (scheme !in setOf("mailto", "tel", "sms", "geo")) return true
+                    return try {
+                        startActivity(Intent(Intent.ACTION_VIEW, request?.url))
+                        true
+                    } catch (_: Exception) { true }
+                }
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     if (url != null) { currentUrl = url; suppressSuggestions = true; address.setText(url); suppressSuggestions = false }
                     this@MainActivity.progress.visibility = View.VISIBLE
@@ -155,6 +177,7 @@ class MainActivity : Activity() {
                     if (url != null && !url.startsWith("about:")) {
                         currentUrl = url
                         if (history.lastOrNull() != url) { history.add(url); persistSavedData() }
+                        android.webkit.CookieManager.getInstance().flush()
                         LightweightExtensionRuntime.injectEnabled(this@MainActivity, this@MainActivity.web, url)
                     }
                 }
@@ -772,6 +795,17 @@ class MainActivity : Activity() {
     private fun showAbout() {
         AlertDialog.Builder(this).setTitle("OmegA Browser").setMessage("Version 1.0.0\nCustomized by NirZon\nIndependent lightweight browser project.")
             .setPositiveButton("OK", null).show()
+    }
+    override fun onPause() {
+        if (::web.isInitialized) {
+            android.webkit.CookieManager.getInstance().flush()
+            web.onPause()
+        }
+        super.onPause()
+    }
+    override fun onResume() {
+        super.onResume()
+        if (::web.isInitialized) web.onResume()
     }
     override fun onBackPressed() {
         if (::web.isInitialized && web.canGoBack() && web.visibility == View.VISIBLE) web.goBack() else showHome()
