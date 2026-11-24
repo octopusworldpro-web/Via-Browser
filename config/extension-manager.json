@@ -3,7 +3,7 @@
   "product": "OmegA Browser",
   "extensionManager": {
     "enabled": false,
-    "disabledReason": "No compatible WebExtension runtime is integrated. ZIP/CRX/Web Store are planned sources only; packages must not be shown as installed or runnable.",
+    "disabledReason": "Lightweight WebView-based runtime is only an implementation target; no safe runtime is integrated. ZIP/CRX/Web Store are planned only.",
     "defaultEnabled": false,
     "permissionPolicy": "explicit_least_privilege",
     "hostAccessModes": [
@@ -54,6 +54,11 @@
     "runtimeAvailable": false,
     "chromeExtensionExecution": false,
     "webStoreInstallEnabled": false,
+    "engineStrategy": "retain_android_webview",
+    "implementationTarget": "restricted_isolated_content_script_subset",
+    "fullChromeExtensionCompatibility": false,
+    "geckoViewBundled": false,
+    "minSdkPreservationTarget": 19,
     "runtimeAdapterContract": "AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md"
   }
 }
