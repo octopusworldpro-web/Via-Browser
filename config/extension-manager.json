@@ -104,5 +104,33 @@
     "rejectMalformedInput": true,
     "rejectUnsupportedDomains": true,
     "neverBypassSiteAuthentication": true
+  },
+  "deviceIdentityManager": {
+    "enabled": false,
+    "status": "core_implemented_android_webview_integration_pending",
+    "supportedValues": [
+      "userAgent",
+      "acceptLanguage",
+      "locale",
+      "timeZone"
+    ],
+    "siteScope": "exact_http_https_origins",
+    "maxSiteOrigins": 50,
+    "hardwareIdentifiersSupported": false,
+    "rejectedFields": [
+      "imei",
+      "meid",
+      "serialNumber",
+      "androidId",
+      "hardwareId",
+      "deviceId",
+      "advertisingId",
+      "fingerprint",
+      "macAddress"
+    ],
+    "requireExplicitUserAction": true,
+    "requirePerProfileConsent": true,
+    "persistInAppPrivateStorage": true,
+    "applyOnlyToBrowserExposedValues": true
   }
 }
