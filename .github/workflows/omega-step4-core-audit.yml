@@ -18,8 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout base APK and audit files
+      - name: Checkout audit files
         uses: actions/checkout@v4
+
+      - name: Download previously verified OmegA APK
+        uses: actions/download-artifact@v4
+        with:
+          name: OmegA-Browser-step4-ui-branding-test-build
+          path: work/input
+          repository: octopusworldpro-web/Via-Browser
+          run-id: 45331285994
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -41,26 +50,25 @@ jobs:
           chmod +x /usr/local/bin/apktool
           apktool --version
 
-      - name: Verify base APK integrity and fingerprint
+      - name: Verify downloaded OmegA APK integrity
         run: |
           python3 - <<'PY'
           import hashlib, zipfile
           from pathlib import Path
-          apk = Path("Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk")
-          expected = "5764435e66cdfa71bd18e01df6c794b7e1ba64a13ba147a4a216d9f245e8acc8"
-          actual = hashlib.sha256(apk.read_bytes()).hexdigest()
-          assert actual == expected, f"Unexpected base APK SHA-256: {actual}"
+          apk = Path('work/input/OmegA-Browser.apk')
+          assert apk.is_file() and apk.stat().st_size > 1_000_000, 'Verified OmegA APK artifact is missing or unexpectedly small'
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
           with zipfile.ZipFile(apk) as z:
               bad = z.testzip()
-              assert bad is None, f"Corrupt archive entry: {bad}"
+              assert bad is None, f'Corrupt archive entry: {bad}'
               names = set(z.namelist())
-              assert "classes.dex" in names
-              assert "AndroidManifest.xml" in names
-          print(f"PASS: SHA-256 {actual}; APK archive valid")
+              assert 'classes.dex' in names
+              assert 'AndroidManifest.xml' in names
+          print(f'PASS: OmegA APK archive valid; SHA-256 {digest}')
           PY
 
-      - name: Decode manifest and resources
-        run: apktool d -f "Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk" -o work/base
+      - name: Decode OmegA APK and resources
+        run: apktool d -f work/input/OmegA-Browser.apk -o work/base
 
       - name: Check browser-core preservation markers
         run: |
@@ -131,9 +139,9 @@ jobs:
           minimum = re.search(r"^sdkVersion:'([^']+)'", output, re.MULTILINE)
           assert package, "aapt could not read package name from compiled APK manifest"
           assert minimum, "aapt could not read minSdkVersion from compiled APK manifest"
-          assert package.group(1) == "mark.via.gp", f"Unexpected base package: {package.group(1)}"
+          assert package.group(1) == "com.octopusworldpro.omega.browser", f"Unexpected OmegA package: {package.group(1)}"
           assert minimum.group(1) == "19", f"Expected minSdk 19, got {minimum.group(1)}"
-          print(f"PASS: base package {package.group(1)}; minSdkVersion {minimum.group(1)}")
+          print(f"PASS: OmegA package {package.group(1)}; minSdkVersion {minimum.group(1)}")
           PY
 
       - name: Upload static audit evidence
