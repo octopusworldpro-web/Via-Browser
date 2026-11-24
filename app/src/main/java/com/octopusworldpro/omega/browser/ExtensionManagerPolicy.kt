@@ -51,7 +51,19 @@ internal object ExtensionManagerPolicy {
             unsupportedApi -> "One or more requested Chrome APIs are not supported"
             else -> null
         }
-        val digest = MessageDigest.getInstance("SHA-256").digest(raw.toByteArray()).joinToString("") { "%02x".format(it) }
+        val md = MessageDigest.getInstance("SHA-256")
+        directory.walkTopDown().filter { it.isFile }.sortedBy { it.relativeTo(directory).invariantSeparatorsPath }.forEach { file ->
+            md.update(file.relativeTo(directory).invariantSeparatorsPath.toByteArray())
+            file.inputStream().use { input ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    md.update(buffer, 0, count)
+                }
+            }
+        }
+        val digest = md.digest().joinToString("") { "%02x".format(it) }
         val size = directory.walkTopDown().filter { it.isFile }.sumOf { it.length() }
         return ExtensionSummary(
             directory.name, name, version, manifest.optString("description"), manifest.optString("author"),
