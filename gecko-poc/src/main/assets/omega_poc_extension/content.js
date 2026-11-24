@@ -1,5 +1,9 @@
 (() => {
   document.documentElement.dataset.omegaGeckoExtension = "active";
+  const originalTitle = document.title || "Example Domain";
+  if (!originalTitle.includes("OmegA Extension Active")) {
+    document.title = originalTitle + " | OmegA Extension Active";
+  }
   const marker = document.createElement("div");
   marker.textContent = "OmegA WebExtension POC active";
   marker.setAttribute("role", "status");
