@@ -623,7 +623,7 @@ class MainActivity : Activity() {
                     while (entry != null) {
                         fileCount++
                         if (fileCount > 2000) throw IllegalArgumentException("ZIP contains too many files")
-                        val name = entry.name.replace('\\\\', '/')
+                        val name = entry.name.replace('\\', '/')
                         if (name.startsWith("/") || name.split('/').any { it == ".." } || name.contains(":")) {
                             throw IllegalArgumentException("Unsafe ZIP entry path")
                         }
