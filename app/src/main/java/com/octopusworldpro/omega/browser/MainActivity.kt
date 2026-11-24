@@ -550,7 +550,7 @@ class MainActivity : Activity() {
                     fbStateContent = raw
                     val preview = names.joinToString("\n") { "$it = ••••••••" }
                     AlertDialog.Builder(this).setTitle("FBState validated")
-                        .setMessage("Cookie names: \${names.size}\nRequired c_user + xs: present\n\n$preview")
+                        .setMessage("Cookie names: " + names.size + "\nRequired c_user + xs: present\n\n" + preview)
                         .setPositiveButton("OK", null).show()
                 } catch (e: Exception) {
                     AlertDialog.Builder(this).setTitle("Cookie Header invalid")
