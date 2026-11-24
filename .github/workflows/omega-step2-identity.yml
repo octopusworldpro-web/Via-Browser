@@ -1,0 +1,118 @@
+name: OmegA Browser — Step 2 Identity Repack
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repackage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Via Browser base
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK build tools
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        run: |
+          sdkmanager "platform-tools" "build-tools;36.0.0"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      - name: Install Apktool
+        run: |
+          curl -fsSL -o /usr/local/bin/apktool https://raw.githubusercontent.com/iBotPeaches/Apktool/v2.11.1/scripts/linux/apktool
+          curl -fsSL -o /usr/local/bin/apktool.jar https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar
+          chmod +x /usr/local/bin/apktool
+          apktool --version
+
+      - name: Decode base APK
+        run: |
+          BASE_APK="Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk"
+          test -s "$BASE_APK"
+          apktool d -f "$BASE_APK" -o work/decoded
+
+      - name: Apply OmegA application identity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          root = Path("work/decoded")
+          manifest = root / "AndroidManifest.xml"
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          tree = ET.parse(manifest)
+          node = tree.getroot()
+          old_id = node.attrib.get("package")
+          new_id = "com.octopusworldpro.omega.browser"
+          node.set("package", new_id)
+          android = "{http://schemas.android.com/apk/res/android}"
+          node.set(android + "versionName", "7.4.1-omega")
+          node.set(android + "versionCode", "2026112401")
+
+          # Migrate package-scoped manifest authorities and custom permission names.
+          for element in node.iter():
+              for key, value in list(element.attrib.items()):
+                  if isinstance(value, str) and old_id and old_id in value:
+                      element.set(key, value.replace(old_id, new_id))
+
+          tree.write(manifest, encoding="utf-8", xml_declaration=True)
+
+          # Update the existing app-name string wherever it is defined.
+          for strings in (root / "res").glob("values*/strings.xml"):
+              try:
+                  st = ET.parse(strings)
+                  changed = False
+                  for item in st.getroot().findall("string"):
+                      if item.attrib.get("name") in {"app_name", "app_name_short"}:
+                          item.text = "OmegA Browser"
+                          changed = True
+                  if changed:
+                      st.write(strings, encoding="utf-8", xml_declaration=True)
+              except ET.ParseError:
+                  raise
+          print(f"Identity applied: {old_id} -> {new_id}")
+          PY
+
+      - name: Rebuild unsigned OmegA APK
+        run: |
+          apktool b work/decoded -o work/OmegA-Browser-unsigned.apk
+          test -s work/OmegA-Browser-unsigned.apk
+
+      - name: Align and sign test APK
+        run: |
+          zipalign -f -p 4 work/OmegA-Browser-unsigned.apk work/OmegA-Browser-aligned.apk
+          keytool -genkeypair -v -keystore work/temporary-test-key.jks \
+            -storepass android -keypass android -alias omega-test \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=OmegA Browser Test, OU=Build, O=OmegA, C=SG"
+          apksigner sign --ks work/temporary-test-key.jks \
+            --ks-pass pass:android --key-pass pass:android \
+            --out work/OmegA-Browser.apk work/OmegA-Browser-aligned.apk
+          apksigner verify --verbose work/OmegA-Browser.apk
+
+      - name: Verify final package identity
+        run: |
+          aapt dump badging work/OmegA-Browser.apk | tee work/badging.txt
+          grep -F "package: name='com.octopusworldpro.omega.browser'" work/badging.txt
+          grep -F "application-label:'OmegA Browser'" work/badging.txt || true
+          grep -F "versionName='7.4.1-omega'" work/badging.txt
+
+      - name: Upload test APK and build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmegA-Browser-step2-test-build
+          path: |
+            work/OmegA-Browser.apk
+            work/badging.txt
+          if-no-files-found: error
+          retention-days: 7
