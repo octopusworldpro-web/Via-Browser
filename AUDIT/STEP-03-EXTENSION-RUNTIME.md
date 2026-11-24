@@ -1,6 +1,6 @@
 # Roadmap Step 3 — Lightweight Extension Runtime + Extension Manager
 
-**Status: IN PROGRESS — lightweight content-script execution is integrated; full Chrome compatibility is explicitly out of scope.**
+**Status: IN PROGRESS — hardened URL/script validation and JVM tests added; Android device verification remains. Full Chrome compatibility is explicitly out of scope.**
 
 ## Engine decision
 
@@ -31,9 +31,9 @@ Because scripts share the page context, only install extensions from sources the
 
 ## Remaining verification
 
-1. CI compile and utility tests for the current implementation.
-2. Add focused tests for match-pattern behavior and manifest/script path validation.
+1. Run Android compile and JVM unit tests for URL matching and script path policy.
+2. Validate malformed/unsupported manifest combinations and archive edge cases.
 3. Test install, enable, disable, matching-site injection and removal on an Android device.
 4. Measure final main APK and installed extension storage size.
 
-**Honest status:** a minimal page-context content-script feature is now wired into the OmegA WebView app. Step 3 is not fully complete until CI and device tests pass.
+**Honest status:** URL matching and script-path checks now use a pure JVM-testable policy. Step 3 remains open until CI and Android device tests pass.
