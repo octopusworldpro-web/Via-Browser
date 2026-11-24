@@ -14,6 +14,11 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.*
+import android.app.DownloadManager
+import android.content.Context
+import android.os.Environment
+import android.webkit.DownloadListener
+import android.webkit.URLUtil
 import android.text.Editable
 import android.text.TextWatcher
 import android.os.Handler
@@ -43,6 +48,7 @@ class MainActivity : Activity() {
     private var identityLanguage = ""
     private var identityUserAgent = ""
     private var pendingImport = 0
+    private lateinit var prefs: android.content.SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +56,8 @@ class MainActivity : Activity() {
             window.statusBarColor = bg
             window.navigationBarColor = bg
         }
+        prefs = getSharedPreferences("omega_browser", Context.MODE_PRIVATE)
+        loadSavedData()
         buildShell()
         showHome()
     }
@@ -96,7 +104,7 @@ class MainActivity : Activity() {
                     this@MainActivity.progress.visibility = View.GONE
                     if (url != null && !url.startsWith("about:")) {
                         currentUrl = url
-                        if (history.lastOrNull() != url) history.add(url)
+                        if (history.lastOrNull() != url) { history.add(url); persistSavedData() }
                     }
                 }
             }
@@ -259,12 +267,12 @@ class MainActivity : Activity() {
         val values = items.distinct().toTypedArray()
         val builder = AlertDialog.Builder(this).setTitle(title)
         if (values.isEmpty()) builder.setMessage("Nothing here yet.") else builder.setItems(values) { _, which -> loadAddress(values[which]) }
-        if (allowAdd) builder.setPositiveButton("Bookmark current page") { _, _ -> if (!bookmarks.contains(currentUrl)) bookmarks.add(currentUrl) }
+        if (allowAdd) builder.setPositiveButton("Bookmark current page") { _, _ -> if (!bookmarks.contains(currentUrl)) { bookmarks.add(currentUrl); persistSavedData(); Toast.makeText(this, "Bookmark saved", Toast.LENGTH_SHORT).show() } }
         builder.setNegativeButton("Close", null).show()
     }
     private fun showDownloads() {
-        AlertDialog.Builder(this).setTitle("Downloads").setMessage("Download tracking and file handling are not yet connected.")
-            .setPositiveButton("OK", null).show()
+        try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
+        catch (_: Exception) { AlertDialog.Builder(this).setTitle("Downloads").setMessage("Open the Android Downloads app to view saved files.").setPositiveButton("OK", null).show() }
     }
     private fun showSettings() {
         val items = arrayOf("Appearance: Dark", "Search engine: Google", "JavaScript: Enabled", "Clear browsing data", "About")
@@ -287,6 +295,7 @@ class MainActivity : Activity() {
             .setView(fields).setPositiveButton("Save") { _, _ ->
                 identityUserAgent = ua.text.toString().trim(); identityLanguage = lang.text.toString().trim()
                 if (identityUserAgent.isNotEmpty()) web.settings.userAgentString = identityUserAgent
+                persistSavedData()
                 Toast.makeText(this, "Profile saved for browser session.", Toast.LENGTH_SHORT).show()
             }.setNegativeButton("Cancel", null).show()
     }
@@ -322,6 +331,28 @@ class MainActivity : Activity() {
                 .setPositiveButton("OK", null).show()
         } catch (_: Exception) { Toast.makeText(this, "Could not read selected file.", Toast.LENGTH_LONG).show() }
     }
+    private fun loadSavedData() {
+        fun readList(key: String): MutableList<String> {
+            return try {
+                val a = JSONArray(prefs.getString(key, "[]") ?: "[]")
+                MutableList(a.length()) { i -> a.getString(i) }
+            } catch (_: Exception) { mutableListOf() }
+        }
+        bookmarks.addAll(readList("bookmarks"))
+        history.addAll(readList("history"))
+        identityUserAgent = prefs.getString("identity_ua", "") ?: ""
+        identityLanguage = prefs.getString("identity_lang", "") ?: ""
+    }
+
+    private fun persistSavedData() {
+        prefs.edit()
+            .putString("bookmarks", JSONArray(bookmarks.distinct().takeLast(500)).toString())
+            .putString("history", JSONArray(history.distinct().takeLast(500)).toString())
+            .putString("identity_ua", identityUserAgent)
+            .putString("identity_lang", identityLanguage)
+            .apply()
+    }
+
     private fun showAbout() {
         AlertDialog.Builder(this).setTitle("OmegA Browser").setMessage("Version 1.0.0\nCustomized by NirZon\nIndependent lightweight browser project.")
             .setPositiveButton("OK", null).show()
