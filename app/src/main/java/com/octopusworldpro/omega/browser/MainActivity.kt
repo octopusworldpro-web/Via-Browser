@@ -407,13 +407,67 @@ class MainActivity : Activity() {
     }
 
     private fun showMainMenu() {
-        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "Extensions", "Device Identity Manager", "Settings", "About")
-        AlertDialog.Builder(this).setTitle("OmegA Browser").setItems(options) { _, which ->
-            when (which) {
-                0 -> newTab(); 1 -> showTabs(); 2 -> showBookmarks(); 3 -> showHistory()
-                4 -> showDownloads(); 5 -> showExtensions(); 6 -> showIdentity(); 7 -> showSettings(); 8 -> showAbout()
+        val options = listOf(
+            Triple("＋", "New tab", "Open a fresh browsing tab") { newTab() },
+            Triple("▢", "Tabs", "Switch between open pages") { showTabs() },
+            Triple("☆", "Bookmarks", "Saved websites") { showBookmarks() },
+            Triple("◷", "History", "Recently visited pages") { showHistory() },
+            Triple("↓", "Downloads", "Downloaded files") { showDownloads() },
+            Triple("🧩", "Extensions", "Manage installed add-ons") { showExtensions() },
+            Triple("⌁", "Device Identity", "User-Agent and language") { showIdentity() },
+            Triple("⚙", "Settings", "Browser preferences") { showSettings() },
+            Triple("ⓘ", "About OmegA", "Version and project information") { showAbout() }
+        )
+        showActionSheet("OmegA Browser", "Quick access", options)
+    }
+
+    private fun showActionSheet(
+        title: String,
+        subtitle: String,
+        actions: List<Triple<String, String, String, () -> Unit>>
+    ) {
+        val dialog = android.app.Dialog(this)
+        val density = resources.displayMetrics.density
+        val sheet = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((20*density).toInt(), (12*density).toInt(), (20*density).toInt(), (18*density).toInt())
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(19, 16, 34))
+                cornerRadii = floatArrayOf(24*density,24*density,24*density,24*density,0f,0f,0f,0f)
+                setStroke((1*density).toInt().coerceAtLeast(1), Color.argb(55,168,85,247))
             }
-        }.show()
+        }
+        sheet.addView(View(this).apply { background = rounded(Color.rgb(100,91,122), 8) },
+            LinearLayout.LayoutParams((42*density).toInt(), (4*density).toInt()).apply { gravity = Gravity.CENTER; bottomMargin=(18*density).toInt() })
+        sheet.addView(TextView(this).apply { text=title; textSize=21f; setTextColor(ink); setTypeface(null, android.graphics.Typeface.BOLD) })
+        sheet.addView(TextView(this).apply { text=subtitle; textSize=13f; setTextColor(Color.LTGRAY); setPadding(0,(3*density).toInt(),0,(12*density).toInt()) })
+        actions.forEach { item ->
+            val row = LinearLayout(this).apply {
+                orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL
+                setPadding((12*density).toInt(),(10*density).toInt(),(12*density).toInt(),(10*density).toInt())
+                background=rounded(Color.argb(35,168,85,247),14)
+                isClickable=true; isFocusable=true
+            }
+            row.addView(TextView(this).apply { text=item.first; textSize=23f; gravity=Gravity.CENTER; setTextColor(accent) },
+                LinearLayout.LayoutParams((44*density).toInt(),(44*density).toInt()))
+            val labels=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER_VERTICAL }
+            labels.addView(TextView(this).apply { text=item.second; textSize=15f; setTextColor(ink); setTypeface(null,android.graphics.Typeface.BOLD) })
+            labels.addView(TextView(this).apply { text=item.third; textSize=11f; setTextColor(Color.LTGRAY) })
+            row.addView(labels,LinearLayout.LayoutParams(0,-2,1f))
+            row.setOnClickListener { dialog.dismiss(); item.fourth() }
+            sheet.addView(row,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=(7*density).toInt() })
+        }
+        val scroll=ScrollView(this).apply { isFillViewport=false; addView(sheet) }
+        dialog.setContentView(scroll)
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(-1,-2)
+            setGravity(Gravity.BOTTOM)
+            addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            setDimAmount(0.58f)
+        }
+        dialog.show()
+        dialog.window?.setLayout(-1, (resources.displayMetrics.heightPixels*0.82f).toInt())
     }
     private fun newTab() {
         if (tabs.size >= 19) {
@@ -430,23 +484,52 @@ class MainActivity : Activity() {
         web.loadUrl(currentUrl)
     }
     private fun showTabs() {
-        val entries = (tabs + currentUrl).toTypedArray()
-        AlertDialog.Builder(this).setTitle("Tabs (${entries.size}/20)")
-            .setItems(entries) { _, which ->
-                if (which < tabs.size) {
-                    val selected = tabs[which]
-                    tabs[which] = currentUrl
-                    currentUrl = selected
-                } else {
-                    currentUrl = entries[which]
-                }
-                persistSavedData()
-                showBrowser()
-                web.loadUrl(currentUrl)
+        val dialog = android.app.Dialog(this)
+        val density = resources.displayMetrics.density
+        val entries = (tabs + currentUrl).toList()
+        val panelView = LinearLayout(this).apply {
+            orientation=LinearLayout.VERTICAL
+            setPadding((18*density).toInt(),(12*density).toInt(),(18*density).toInt(),(18*density).toInt())
+            background=GradientDrawable().apply {
+                setColor(bg)
+                cornerRadii=floatArrayOf(24*density,24*density,24*density,24*density,0f,0f,0f,0f)
+                setStroke((1*density).toInt().coerceAtLeast(1),Color.argb(55,168,85,247))
             }
-            .setPositiveButton("New tab") { _, _ -> newTab() }
-            .setNeutralButton("Manage") { _, _ -> manageTabs() }
-            .setNegativeButton("Close", null).show()
+        }
+        panelView.addView(View(this).apply { background=rounded(Color.rgb(100,91,122),8) },
+            LinearLayout.LayoutParams((42*density).toInt(),(4*density).toInt()).apply { gravity=Gravity.CENTER; bottomMargin=(16*density).toInt() })
+        val header=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
+        val heading=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
+        heading.addView(TextView(this).apply { text="Your tabs"; textSize=22f; setTextColor(ink); setTypeface(null,android.graphics.Typeface.BOLD) })
+        heading.addView(TextView(this).apply { text="${entries.size} of 20 tabs"; textSize=12f; setTextColor(Color.LTGRAY) })
+        header.addView(heading,LinearLayout.LayoutParams(0,-2,1f))
+        val add=TextView(this).apply { text="＋ New"; textSize=14f; setTextColor(ink); gravity=Gravity.CENTER; background=rounded(accent,18); setPadding((14*density).toInt(),(9*density).toInt(),(14*density).toInt(),(9*density).toInt()); setOnClickListener { dialog.dismiss(); newTab() } }
+        header.addView(add); panelView.addView(header,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=(14*density).toInt() })
+        entries.forEachIndexed { index, url ->
+            val card=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL; setPadding((12*density).toInt(),(10*density).toInt(),(8*density).toInt(),(10*density).toInt()); background=rounded(if(index==entries.lastIndex) Color.argb(65,168,85,247) else panel,16) }
+            val info=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
+            val host=runCatching { Uri.parse(url).host ?: url }.getOrDefault(url)
+            info.addView(TextView(this).apply { text=host; textSize=15f; setTextColor(ink); setTypeface(null,android.graphics.Typeface.BOLD); maxLines=1 })
+            info.addView(TextView(this).apply { text=url; textSize=10f; setTextColor(Color.LTGRAY); maxLines=1 })
+            card.addView(info,LinearLayout.LayoutParams(0,-2,1f))
+            val close=TextView(this).apply { text="×"; textSize=25f; gravity=Gravity.CENTER; setTextColor(Color.LTGRAY); setPadding((12*density).toInt(),0,(12*density).toInt(),0) }
+            card.addView(close,LinearLayout.LayoutParams((42*density).toInt(),(42*density).toInt()))
+            card.setOnClickListener {
+                if(index<tabs.size){ val chosen=tabs[index]; tabs[index]=currentUrl; currentUrl=chosen }
+                persistSavedData(); dialog.dismiss(); showBrowser(); web.loadUrl(currentUrl)
+            }
+            close.setOnClickListener {
+                if(index==entries.lastIndex){ if(tabs.isNotEmpty()){ currentUrl=tabs.removeAt(tabs.lastIndex); persistSavedData(); dialog.dismiss(); showBrowser(); web.loadUrl(currentUrl) } else { dialog.dismiss(); showHome() } }
+                else { tabs.removeAt(index); persistSavedData(); dialog.dismiss(); showTabs() }
+            }
+            panelView.addView(card,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=(9*density).toInt() })
+        }
+        val footer=TextView(this).apply { text="Close background tabs"; textSize=13f; gravity=Gravity.CENTER; setTextColor(Color.LTGRAY); setPadding(0,(12*density).toInt(),0,(8*density).toInt()); setOnClickListener { tabs.clear(); persistSavedData(); dialog.dismiss(); Toast.makeText(this@MainActivity,"Background tabs closed",Toast.LENGTH_SHORT).show() } }
+        panelView.addView(footer)
+        dialog.setContentView(ScrollView(this).apply { addView(panelView) })
+        dialog.window?.apply { setBackgroundDrawableResource(android.R.color.transparent); setLayout(-1,-2); setGravity(Gravity.BOTTOM); addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND); setDimAmount(0.58f) }
+        dialog.show()
+        dialog.window?.setLayout(-1,(resources.displayMetrics.heightPixels*0.78f).toInt())
     }
 
     private fun manageTabs() {
