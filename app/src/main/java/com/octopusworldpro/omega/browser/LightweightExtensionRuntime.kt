@@ -32,15 +32,14 @@ internal object LightweightExtensionRuntime {
                 for (i in 0 until contentScripts.length()) {
                     val entry = contentScripts.optJSONObject(i) ?: continue
                     val matches = entry.optJSONArray("matches") ?: continue
-                    if (!(0 until matches.length()).any { matches.optString(it).let { pattern -> matchesUrl(pageUrl, pattern) } }) continue
+                    if (!(0 until matches.length()).any { matches.optString(it).let { pattern -> ExtensionRuntimePolicy.matchesUrl(pageUrl, pattern) } }) continue
                     if (entry.optBoolean("all_frames", false)) continue // top-frame only in this lightweight adapter
                     val files = entry.optJSONArray("js") ?: continue
                     for (j in 0 until files.length()) {
                         val relative = files.optString(j)
                         if (relative.isBlank()) continue
+                        if (!ExtensionRuntimePolicy.isSafeScript(directory, relative, MAX_SCRIPT_BYTES.toLong())) continue
                         val script = File(directory, relative)
-                        if (!script.canonicalPath.startsWith(directory.canonicalPath + File.separator) ||
-                            !script.isFile || script.length() > MAX_SCRIPT_BYTES) continue
                         val source = script.readText()
                         val encoded = JSONObject.quote(source)
                         webView.evaluateJavascript(
@@ -57,27 +56,4 @@ internal object LightweightExtensionRuntime {
 
     fun enabledKey(id: String) = "extension_enabled_$id"
 
-    private fun matchesUrl(url: String, pattern: String): Boolean {
-        if (pattern == "<all_urls>") return url.startsWith("http://") || url.startsWith("https://")
-        val separator = pattern.indexOf("://")
-        if (separator <= 0) return false
-        val schemePattern = pattern.substring(0, separator)
-        val rest = pattern.substring(separator + 3)
-        val slash = rest.indexOf('/')
-        val hostPattern = if (slash < 0) rest else rest.substring(0, slash)
-        val pathPattern = if (slash < 0) "/*" else rest.substring(slash)
-        val uri = Uri.parse(url)
-        val scheme = uri.scheme ?: return false
-        val host = uri.host ?: return false
-        if (schemePattern != "*" && schemePattern != scheme) return false
-        val hostMatches = when {
-            hostPattern == "*" -> true
-            hostPattern.startsWith("*.") -> host == hostPattern.substring(2) || host.endsWith(".${hostPattern.substring(2)}")
-            else -> host.equals(hostPattern, ignoreCase = true)
-        }
-        if (!hostMatches) return false
-        val pathRegex = Regex("^" + pathPattern.map { if (it == '*') ".*" else Regex.escape(it.toString()) }.joinToString("") + "$")
-        val path = (uri.path ?: "/") + (uri.encodedQuery?.let { "?$it" } ?: "")
-        return pathRegex.matches(path)
-    }
 }
