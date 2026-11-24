@@ -31,6 +31,7 @@ jobs:
           unzip -q /tmp/jadx.zip -d /opt/jadx
           chmod +x /opt/jadx/bin/jadx
           echo "/opt/jadx/bin" >> "$GITHUB_PATH"
+          export PATH="/opt/jadx/bin:$PATH"
           jadx --version
 
       - name: Decompile base APK
