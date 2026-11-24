@@ -632,7 +632,7 @@ class MainActivity : Activity() {
                 val hostPatterns = info?.hostPatterns?.joinToString("\n") ?: "None"
                 val status = if (info == null) "Error: package metadata could not be read" else if (info.compatible) "Partial: top-frame page-context content scripts only" else "Incompatible: ${info.incompatibility}"
                 val detailText = buildString {
-                    append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
+                    append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nDescription: ${info?.description?.ifBlank { "Not provided" } ?: "Not provided"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
                     append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (manifest): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
                 }
                 val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
@@ -643,7 +643,7 @@ class MainActivity : Activity() {
                         if (web.visibility == View.VISIBLE) web.reload()
                         showExtensions()
                     }).setNeutralButton("Site access") { _, _ ->
-                        val modes = arrayOf("Block all sites", "On click — current site once", "Selected sites — add current site", "All matching sites")
+                        val modes = arrayOf("Block all sites", "On click — current site once", "Selected sites — add current site", "All matching sites", "Clear extension data")
                         val currentOrigin = try { val u = Uri.parse(currentUrl); "${u.scheme}://${u.authority}" } catch (_: Exception) { "" }
                         AlertDialog.Builder(this).setTitle("Site access")
                             .setItems(modes) { _, mode ->
@@ -666,10 +666,10 @@ class MainActivity : Activity() {
                                             edit.putStringSet(LightweightExtensionRuntime.selectedSitesKey(extensionId), sites)
                                         }
                                     }
-                                    3 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "all_sites")
+                                    3 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "all_sites")\n                                    4 -> {\n                                        val dataDir = File(filesDir, "extension-data/${dir.name}")\n                                        dataDir.deleteRecursively()\n                                    }
                                 }
                                 edit.apply()
-                                if ((mode == 1 || mode == 2 || mode == 3 || mode == 0) && web.visibility == View.VISIBLE) web.reload()
+                                if (mode in 0..3 && web.visibility == View.VISIBLE) web.reload()
                                 Toast.makeText(this, "Site access updated", Toast.LENGTH_SHORT).show()
                                 showExtensions()
                             }.setNegativeButton("Cancel", null).show()
@@ -682,12 +682,6 @@ class MainActivity : Activity() {
                             .apply()
                         dir.deleteRecursively()
                         Toast.makeText(this, "Extension removed", Toast.LENGTH_SHORT).show()
-                        showExtensions()
-                    }.setNeutralButton("Clear data") { _, _ ->
-                        val dataDir = File(filesDir, "extension-data/${dir.name}")
-                        val cleared = if (dataDir.exists()) dataDir.walkTopDown().filter { it.isFile }.sumOf { it.length() } else 0L
-                        dataDir.deleteRecursively()
-                        Toast.makeText(this, "Extension data cleared ($cleared bytes)", Toast.LENGTH_SHORT).show()
                         showExtensions()
                     }.show().getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = enabled || info?.compatible == true
             }.setNegativeButton("Close", null).show()
