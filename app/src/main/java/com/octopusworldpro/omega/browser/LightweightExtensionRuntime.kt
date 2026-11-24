@@ -76,7 +76,7 @@ internal object LightweightExtensionRuntime {
             else -> host.equals(hostPattern, ignoreCase = true)
         }
         if (!hostMatches) return false
-        val pathRegex = Regex("^" + Regex.escape(pathPattern).replace("\\\\*", ".*") + "$")
+        val pathRegex = Regex("^" + pathPattern.map { if (it == '*') ".*" else Regex.escape(it.toString()) }.joinToString("") + "$")
         val path = (uri.path ?: "/") + (uri.encodedQuery?.let { "?$it" } ?: "")
         return pathRegex.matches(path)
     }
