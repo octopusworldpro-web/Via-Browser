@@ -470,10 +470,18 @@ class MainActivity : Activity() {
     }
 
     private fun showFbState() {
+        AlertDialog.Builder(this)
+            .setTitle("C3C FBState Utility")
+            .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; values are masked and never uploaded.")
+            .setPositiveButton("Continue") { _, _ -> showFbStateOptions() }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun showFbStateOptions() {
         val options = if (fbStateContent == null) arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file")
             else arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file", "Export imported data")
         AlertDialog.Builder(this).setTitle("C3C FBState Utility")
-            .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; values are masked and never uploaded.")
             .setItems(options) { _, which ->
                 if (which == 3) {
                     AlertDialog.Builder(this).setTitle("Export sensitive session data?")
