@@ -32,7 +32,7 @@ OmegA Browser is a separately installable Android browser customization based on
 | Step | Scope | Status |
 |---|---|---|
 | 1 | Base reverse engineering + OmegA identity & branding | **CI/build complete**; device verification pending |
-| 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI guard implemented; in-app UI/runtime tests blocked by missing Android source project |
+| 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI PASS; in-app UI/runtime tests blocked by missing Android source project |
 | 3 | Chrome Extension runtime + extension manager | Manager architecture exists; runtime remains blocked; safety gate CI added |
 | 4 | ZIP/CRX import, install/update/uninstall + storage/background/messaging | Not implemented |
 | 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Not implemented |
