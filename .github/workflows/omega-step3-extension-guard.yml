@@ -7,6 +7,7 @@ on:
       - 'config/extension-manager.json'
       - 'AUDIT/STEP-03-EXTENSION-RUNTIME.md'
       - 'AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md'
+      - 'utilities/fbstate/**'
       - 'README.md'
       - '.github/workflows/omega-step3-extension-guard.yml'
 
@@ -23,7 +24,6 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-
           cfg = json.loads(Path('config/extension-manager.json').read_text())
           ext = cfg['extensionManager']
           assert ext['enabled'] is False
@@ -38,7 +38,6 @@ jobs:
           assert ext['geckoViewBundled'] is False
           assert ext['minSdkPreservationTarget'] == 19
           assert set(ext['plannedImportSources']) == {'local_zip', 'local_crx'}
-
           sec = ext['security']
           for key in ('executeDuringImport', 'autoGrantPermissions', 'exposeCookiesByDefault',
                       'exposePasswordsByDefault', 'exposeHistoryByDefault'):
@@ -47,7 +46,6 @@ jobs:
                       'requireAtomicUpdates'):
               assert sec[key] is True, f'Missing extension security requirement: {key}'
           assert ext['preserveExistingUserscripts'] is True
-
           fb = cfg['fbStateUtility']
           assert fb['enabled'] is False
           assert fb['requireExplicitUserAction'] is True
@@ -59,6 +57,7 @@ jobs:
           assert fb['clearTemporaryDataOnExit'] is True
           assert set(fb['validateCookieNames']) == {'c_user', 'xs'}
           assert 'web_store' not in ext['plannedImportSources']
-
           print('PASS: Web Store disabled; local-only FBState safety defaults verified')
           PY
+      - name: Run FBState parser and exporter tests
+        run: node --test utilities/fbstate/fbstate.test.js
