@@ -135,14 +135,14 @@ class GeckoPocActivity : Activity() {
                 "omega-gecko-poc@example.invalid"
             )
             .accept(
-                { extension: WebExtension ->
+                { extension: WebExtension? ->
                     runOnUiThread {
-                        status.text = "WebExtension ready: " + extension.metaData.name
+                        status.text = "WebExtension ready: " + (extension?.metaData?.name ?: "Extension")
                     }
                 },
-                { error: Throwable ->
+                { error: Throwable? ->
                     runOnUiThread {
-                        status.text = "WebExtension install failed: " + (error.message ?: "Unknown error")
+                        status.text = "WebExtension install failed: " + (error?.message ?: "Unknown error")
                     }
                 }
             )
