@@ -69,7 +69,10 @@ function parseCookieHeader(input, domain) {
 }
 
 function parseNetscape(input) {
-  if (typeof input !== 'string' || !input.trim() || input.includes('\\0')) throw new Error('Netscape cookie file is required and must not contain NUL bytes');\n  const raw = input;
+  if (typeof input !== 'string' || !input.trim() || input.includes('\0')) {
+    throw new Error('Netscape cookie file is required and must not contain NUL bytes');
+  }
+  const raw = input;
   const cookies = [];
   for (const originalLine of raw.split(/\r?\n/)) {
     if (!originalLine || originalLine.startsWith('#') && !originalLine.startsWith('#HttpOnly_')) continue;
