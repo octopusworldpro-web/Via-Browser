@@ -361,7 +361,7 @@ class MainActivity : Activity() {
         )
         shortcuts.forEach { item ->
             val tile = TextView(this).apply {
-                text = "${item.icon}\n${item.title}"
+                text = "${item.first}\n${item.second}"
                 textSize = 16f
                 setLineSpacing(3f, 1f)
                 gravity = Gravity.CENTER
@@ -372,7 +372,7 @@ class MainActivity : Activity() {
                 setPadding(8, 12, 8, 12)
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { item.subtitle() }
+                setOnClickListener { item.third() }
             }
             val lp = GridLayout.LayoutParams().apply { width = 0; height = 140; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
             grid.addView(tile, lp)
@@ -450,11 +450,11 @@ class MainActivity : Activity() {
                 background=rounded(Color.argb(35,168,85,247),14)
                 isClickable=true; isFocusable=true
             }
-            row.addView(TextView(this).apply { text=item.first; textSize=23f; gravity=Gravity.CENTER; setTextColor(accent) },
+            row.addView(TextView(this).apply { text=item.icon; textSize=23f; gravity=Gravity.CENTER; setTextColor(accent) },
                 LinearLayout.LayoutParams((44*density).toInt(),(44*density).toInt()))
             val labels=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER_VERTICAL }
-            labels.addView(TextView(this).apply { text=item.second; textSize=15f; setTextColor(ink); setTypeface(null,android.graphics.Typeface.BOLD) })
-            labels.addView(TextView(this).apply { text=item.third; textSize=11f; setTextColor(Color.LTGRAY) })
+            labels.addView(TextView(this).apply { text=item.title; textSize=15f; setTextColor(ink); setTypeface(null,android.graphics.Typeface.BOLD) })
+            labels.addView(TextView(this).apply { text=item.subtitle; textSize=11f; setTextColor(Color.LTGRAY) })
             row.addView(labels,LinearLayout.LayoutParams(0,-2,1f))
             row.setOnClickListener { dialog.dismiss(); item.action() }
             sheet.addView(row,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=(7*density).toInt() })
