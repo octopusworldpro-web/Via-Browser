@@ -385,7 +385,7 @@ class MainActivity : Activity() {
     }
 
     private fun showMainMenu() {
-        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "C3C FBState Utility", "Device Identity Manager", "Settings", "About")
+        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "FBstat Utility", "Device Identity Manager", "Settings", "About")
         AlertDialog.Builder(this).setTitle("OmegA Browser").setItems(options) { _, which ->
             when (which) {
                 0 -> newTab(); 1 -> showTabs(); 2 -> showBookmarks(); 3 -> showHistory()
@@ -594,7 +594,7 @@ class MainActivity : Activity() {
 
     private fun showFbState() {
         AlertDialog.Builder(this)
-            .setTitle("C3C FBState Utility")
+            .setTitle("FBstat Utility")
             .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; values are masked and never uploaded.")
             .setPositiveButton("Continue") { _, _ -> showFbStateOptions() }
             .setNegativeButton("Close", null)
@@ -602,31 +602,48 @@ class MainActivity : Activity() {
     }
 
     private fun showFbStateOptions() {
-        val options = if (fbStateContent == null) arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file")
-            else arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file", "Export imported data")
-        AlertDialog.Builder(this).setTitle("C3C FBState Utility")
+        val options = arrayOf(
+            "Import AppState JSON",
+            "Import Cookie Header",
+            "Import Netscape file",
+            "Export imported FBState"
+        )
+        AlertDialog.Builder(this).setTitle("FBstat Utility")
             .setItems(options) { _, which ->
-                if (which == 1) {
-                    showCookieHeaderImport()
-                } else if (which == 3) {
-                    AlertDialog.Builder(this).setTitle("Export sensitive session data?")
-                        .setMessage("The backup contains account session cookies. Store it only in a trusted private location.")
-                        .setPositiveButton("Continue") { _, _ ->
-                            pendingExportContent = fbStateContent
-                            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                                addCategory(Intent.CATEGORY_OPENABLE); type = "text/plain"
-                                putExtra(Intent.EXTRA_TITLE, "omegA-fbstate-backup.txt")
-                            }
-                            startActivityForResult(intent, REQUEST_EXPORT)
-                        }.setNegativeButton("Cancel", null).show()
-                } else {
-                    AlertDialog.Builder(this).setTitle("Import sensitive session data?")
-                        .setMessage("You are choosing a local file. OmegA does not upload or auto-read browser cookies.")
-                        .setPositiveButton("I understand") { _, _ ->
-                            pendingImport = which
-                            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
-                            startActivityForResult(intent, REQUEST_IMPORT)
-                        }.setNegativeButton("Cancel", null).show()
+                when (which) {
+                    1 -> showCookieHeaderImport()
+                    3 -> {
+                        val data = fbStateContent
+                        if (data.isNullOrBlank()) {
+                            AlertDialog.Builder(this).setTitle("Nothing to export")
+                                .setMessage("Import and validate an FBState file or Cookie Header first. Then return here and choose Export imported FBState.")
+                                .setPositiveButton("OK", null).show()
+                        } else {
+                            AlertDialog.Builder(this).setTitle("Export FBState backup?")
+                                .setMessage("The selected backup may contain reusable account credentials. Save it only to a private, trusted location. OmegA does not extract cookies from your active Facebook login.")
+                                .setPositiveButton("Save file") { _, _ ->
+                                    pendingExportContent = data
+                                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                        addCategory(Intent.CATEGORY_OPENABLE)
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TITLE, "omegA-fbstate-backup.txt")
+                                    }
+                                    startActivityForResult(intent, REQUEST_EXPORT)
+                                }.setNegativeButton("Cancel", null).show()
+                        }
+                    }
+                    else -> {
+                        AlertDialog.Builder(this).setTitle("Import FBState")
+                            .setMessage("Choose an FBState file that you already have. Active browser login cookies are not read or extracted.")
+                            .setPositiveButton("Choose file") { _, _ ->
+                                pendingImport = which
+                                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                    addCategory(Intent.CATEGORY_OPENABLE)
+                                    type = "*/*"
+                                }
+                                startActivityForResult(intent, REQUEST_IMPORT)
+                            }.setNegativeButton("Cancel", null).show()
+                    }
                 }
             }.setNegativeButton("Close", null).show()
     }
