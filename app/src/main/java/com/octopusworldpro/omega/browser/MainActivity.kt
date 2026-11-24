@@ -674,7 +674,11 @@ class MainActivity : Activity() {
         }
         if (requestCode != REQUEST_IMPORT || resultCode != RESULT_OK || data?.data == null) return
         try {
-            val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { reader ->\n                val text = reader.readText()\n                if (text.length > 1024 * 1024) throw IllegalArgumentException("Selected file exceeds 1 MB limit")\n                text\n            } ?: ""
+            val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { reader ->
+                val text = reader.readText()
+                if (text.length > 1024 * 1024) throw IllegalArgumentException("Selected file exceeds 1 MB limit")
+                text
+            } ?: ""
             val names = when (pendingImport) {
                 0 -> {
                     val rootJson = org.json.JSONTokener(source).nextValue()
@@ -695,8 +699,9 @@ class MainActivity : Activity() {
                     if (pair.size != 2 || pair[0].isBlank() || pair[1].isBlank()) throw IllegalArgumentException("Invalid Cookie header")
                     pair[0].trim()
                 }
-                else -> source.lines().filter { it.isNotBlank() && !it.startsWith("#") && !it.startsWith("#HttpOnly_") }.map {
-                    val fields = it.split("\\t")
+                else -> source.lines().filter { it.isNotBlank() && (!it.startsWith("#") || it.startsWith("#HttpOnly_")) }.map { line ->
+                    val normalizedLine = if (line.startsWith("#HttpOnly_")) line.removePrefix("#HttpOnly_") else line
+                    val fields = normalizedLine.split("\\t")
                     if (fields.size != 7) throw IllegalArgumentException("Invalid Netscape cookie row")
                     val domain = fields[0].removePrefix(".")
                     if (!(domain == "facebook.com" || domain.endsWith(".facebook.com") || domain == "messenger.com" || domain.endsWith(".messenger.com"))) throw IllegalArgumentException("Unsupported cookie domain")
