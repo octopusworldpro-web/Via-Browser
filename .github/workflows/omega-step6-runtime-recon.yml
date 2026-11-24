@@ -1,0 +1,110 @@
+name: OmegA Browser — Step 6 Runtime Reconnaissance
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk'
+      - '.github/workflows/omega-step6-runtime-recon.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-recon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout APK and audit
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install JADX
+        run: |
+          curl -fsSL -o /tmp/jadx.zip https://github.com/skylot/jadx/releases/download/v1.5.7/jadx-1.5.7.zip
+          mkdir -p /opt/jadx
+          unzip -q /tmp/jadx.zip -d /opt/jadx
+          chmod +x /opt/jadx/bin/jadx
+          echo "/opt/jadx/bin" >> "$GITHUB_PATH"
+          jadx --version
+
+      - name: Decompile base APK
+        run: |
+          mkdir -p work
+          jadx --no-res --show-bad-code -d work/jadx "Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk" || true
+          test -d work/jadx/sources
+
+      - name: Generate runtime capability inventory
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, json
+          root = Path("work/jadx/sources")
+          files = list(root.rglob("*.java"))
+          text = []
+          for p in files:
+              try:
+                  text.append((p, p.read_text(errors="ignore")))
+              except OSError:
+                  pass
+          all_text = "\n".join(s for _, s in text)
+          patterns = {
+              "WebView construction and configuration": r"new\\s+WebView|setWebViewClient|setWebChromeClient|addJavascriptInterface",
+              "Activity and Fragment entry points": r"extends\\s+(?:AppCompatActivity|Activity|Fragment)|implements\\s+Lifecycle",
+              "File/document picker": r"ACTION_OPEN_DOCUMENT|ACTION_GET_CONTENT|onActivityResult|ActivityResultLauncher",
+              "WebView navigation hooks": r"shouldOverrideUrlLoading|onPageStarted|onPageFinished|shouldInterceptRequest",
+              "JavaScript bridge": r"@JavascriptInterface|evaluateJavascript|loadUrl\\(.*javascript:",
+              "Persistent storage": r"SharedPreferences|SQLiteDatabase|RoomDatabase|DataStore",
+              "Download integration": r"DownloadManager|setDownloadListener",
+              "Existing userscript subsystem": r"GM_getValue|GM_setValue|GM_xmlhttpRequest|userscript|UserScript",
+              "Chrome/WebExtension runtime indicators": r"chrome\\.runtime|chrome\\.tabs|chrome-extension://|browser\\.runtime|webextension",
+              "Extension package/import indicators": r"manifest\\.json|crx|zipinputstream|ZipFile|ZipInputStream",
+              "WebView service worker and messaging": r"ServiceWorkerController|WebMessagePort|WebMessageListener|WebViewFeature",
+          }
+          lines = [
+              "# OmegA Browser Step 06 — Runtime Reconnaissance",
+              "",
+              f"Decompiled Java source files: {len(files)}",
+              "",
+              "| Capability area | Matching source files | Evidence samples |",
+              "|---|---:|---|",
+          ]
+          for label, pattern in patterns.items():
+              rx = re.compile(pattern, re.I)
+              matches = [(p, [m.group(0) for m in rx.finditer(s)]) for p,s in text]
+              matches = [(p, hits) for p,hits in matches if hits]
+              samples = []
+              for p,hits in matches[:4]:
+                  samples.append(f"`{p.relative_to(root)}`")
+              lines.append(f"| {label} | {len(matches)} | " + (", ".join(samples) if samples else "No static match"))
+          lines += [
+              "",
+              "## Important interpretation",
+              "",
+              "- Static matches identify code locations for review; they do not prove runtime behavior.",
+              "- No Chrome/WebExtension markers means the feature must not be advertised as supported.",
+              "- This report is a reconnaissance artifact, not an implementation or device test.",
+              "",
+              "## Top-level app source files",
+              "",
+          ]
+          for p,_ in text:
+              rel = p.relative_to(root).as_posix()
+              if any(k in rel.lower() for k in ("mainactivity", "browseractivity", "webview", "setting", "extension", "script")):
+                  lines.append(f"- `{rel}`")
+          Path("work/STEP-06-RUNTIME-RECON.md").write_text("\n".join(lines) + "\n")
+          print("\n".join(lines))
+          PY
+
+      - name: Upload decompilation reconnaissance
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmegA-Browser-step6-runtime-recon
+          path: work/STEP-06-RUNTIME-RECON.md
+          if-no-files-found: error
+          retention-days: 14
