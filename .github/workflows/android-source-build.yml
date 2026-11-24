@@ -5,6 +5,7 @@ on:
     branches: [main, 'feature/**']
     paths:
       - 'app/**'
+      - 'gecko-poc/**'
       - '*.gradle'
       - 'gradle.properties'
       - '.github/workflows/android-source-build.yml'
@@ -35,14 +36,25 @@ jobs:
           node --test utilities/fbstate/fbstate.test.js
           node --test utilities/device-identity/device-identity.test.js
           node --test utilities/android-integration/feature-controller.test.js
-      - name: Build debug APK
+      - name: Build main WebView APK
         run: gradle :app:assembleDebug --stacktrace
+      - name: Build isolated GeckoView proof-of-concept APK
+        run: gradle :gecko-poc:assembleDebug --stacktrace
       - name: Verify APK
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
+      - name: Verify GeckoView proof-of-concept APK
+        run: |
+          test -s gecko-poc/build/outputs/apk/debug/gecko-poc-debug.apk
+          ls -lh gecko-poc/build/outputs/apk/debug/gecko-poc-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: OmegA-Browser-native-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OmegA-GeckoView-POC-debug
+          path: gecko-poc/build/outputs/apk/debug/gecko-poc-debug.apk
           if-no-files-found: error
