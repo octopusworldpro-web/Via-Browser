@@ -88,17 +88,17 @@ These checks are acceptance criteria for the later rebuild/device-test stage; th
 ## 7. Reproducible CI preservation audit
 
 Added `.github/workflows/omega-step4-core-audit.yml`. It can be run manually from GitHub Actions and runs when the base APK, audit contract, workflow, or OmegA theme-token resources change. The workflow:
-- Verifies the checked-in APK SHA-256 and ZIP integrity.
+- Downloads the previously successful identity-repack APK artifact (run `45331285994`) and verifies its ZIP integrity and required APK entries.
 - Decodes the APK with Apktool.
 - Checks static DEX/asset markers for WebView, cookies, downloads, history/bookmarks, incognito, reader mode and userscript APIs.
-- Confirms the base package and minSdk 19 remain unchanged.
+- Confirms the OmegA application ID and preserved minSdk 19.
 - Uploads decoded manifest and audit evidence as a short-lived artifact.
 
-This is a static regression guard, not an emulator test. Marker checks establish presence only, not successful feature execution. The workflow has been committed but has not yet been dispatched or observed passing.
+The original base APK is not checked into the repository; the workflow therefore reuses the successful OmegA APK artifact rather than expecting a nonexistent local APK. This is a static regression guard, not an emulator test. Marker checks establish presence only, not successful feature execution. The workflow has been committed but has not yet been dispatched or observed passing.
 
 ## 8. Scope and completion statement
 
-**Completed in roadmap Step 2 (audit/guard scope):** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails, concrete runtime regression acceptance checklist, and a reproducible CI guard for base APK integrity, core markers, API floor, and OmegA theme-token resources.
+**Completed in roadmap Step 2 (audit/guard scope):** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails, concrete runtime regression acceptance checklist, and a reproducible CI guard for the verified OmegA APK artifact, core markers, API floor, and OmegA theme-token resources.
 
 **Not claimed:** source-level code changes, a rebuilt APK, live device compatibility, or passing regression tests. The repository currently contains the original compiled APK and audit/resource files, not the original Via source tree. The available environment also lacks the Android APK reverse-engineering/build tools needed to safely patch and rebuild this binary. Those implementation and runtime-test claims require the source/build toolchain and an Android test environment.
 
