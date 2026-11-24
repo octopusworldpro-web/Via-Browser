@@ -3,7 +3,7 @@
   "product": "OmegA Browser",
   "extensionManager": {
     "enabled": true,
-    "disabledReason": "Extensions are installed disabled and require explicit user enablement. Only matching top-frame content scripts are executed in the webpage JavaScript context; no Chrome APIs, background workers or isolated world.",
+    "disabledReason": "The lightweight content-script runner is available. Each imported extension remains disabled until the user explicitly enables it; scripts run in page context without privileged Chrome APIs.",
     "defaultEnabled": false,
     "permissionPolicy": "explicit_least_privilege",
     "hostAccessModes": [
@@ -51,7 +51,7 @@
       "local_crx"
     ],
     "runtimeAvailable": true,
-    "chromeExtensionExecution": true,
+    "chromeExtensionExecution": false,
     "webStoreInstallEnabled": false,
     "webStoreCompatibility": false,
     "engineStrategy": "retain_android_webview",
