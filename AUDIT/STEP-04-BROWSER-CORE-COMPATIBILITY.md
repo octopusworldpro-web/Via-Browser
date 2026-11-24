@@ -1,6 +1,6 @@
 # Step 04 — Browser Core Compatibility Baseline
 
-**Status:** Static compatibility baseline complete; reproducible CI preservation audit added but not yet run  
+**Status:** Static compatibility baseline complete; CI preservation and OmegA UI-token guard added. Runtime regression and in-app UI integration remain blocked by missing Android source/build project.  
 **Base artifact:** Via Browser 7.4.1 APK  
 **Target identity:** `com.octopusworldpro.omega.browser`  
 **Compatibility floor:** Android API 19 (Android 4.4), subject to feature-specific runtime support
@@ -87,7 +87,7 @@ These checks are acceptance criteria for the later rebuild/device-test stage; th
 
 ## 7. Reproducible CI preservation audit
 
-Added `.github/workflows/omega-step4-core-audit.yml`. It can be run manually from GitHub Actions and also runs when the base APK or this workflow changes. The workflow:
+Added `.github/workflows/omega-step4-core-audit.yml`. It can be run manually from GitHub Actions and runs when the base APK, audit contract, workflow, or OmegA theme-token resources change. The workflow:
 - Verifies the checked-in APK SHA-256 and ZIP integrity.
 - Decodes the APK with Apktool.
 - Checks static DEX/asset markers for WebView, cookies, downloads, history/bookmarks, incognito, reader mode and userscript APIs.
@@ -98,8 +98,8 @@ This is a static regression guard, not an emulator test. Marker checks establish
 
 ## 8. Scope and completion statement
 
-**Completed in Step 04:** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails, concrete runtime regression acceptance checklist, and a committed reproducible static CI preservation audit.
+**Completed in roadmap Step 2 (audit/guard scope):** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails, concrete runtime regression acceptance checklist, and a reproducible CI guard for base APK integrity, core markers, API floor, and OmegA theme-token resources.
 
 **Not claimed:** source-level code changes, a rebuilt APK, live device compatibility, or passing regression tests. The repository currently contains the original compiled APK and audit/resource files, not the original Via source tree. The available environment also lacks the Android APK reverse-engineering/build tools needed to safely patch and rebuild this binary. Those implementation and runtime-test claims require the source/build toolchain and an Android test environment.
 
-Step 04 is complete as a static compatibility specification and CI guard setup. The workflow result is pending. Actual browser-core code changes and runtime compatibility remain blocked until the original Android source project or a reliable decompilation/build toolchain and Android test runtime are available. The next planned stage is Step 05: extension manager architecture and integration.
+**Roadmap Step 2 is not fully complete as an app implementation.** The audit and automated static-preservation guard are complete; browser-core code changes, in-app custom OmegA UI integration, and live regression tests remain blocked because this repository has no original Android source/Gradle project and no connected Android device/emulator. Do not claim those runtime tasks as done. The next stage can proceed with extension architecture while source/build access is pursued.
