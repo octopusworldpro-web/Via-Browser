@@ -1,0 +1,24 @@
+{
+  "product": "OmegA Browser",
+  "applicationId": "com.octopusworldpro.omega.browser",
+  "applicationLabel": "OmegA Browser",
+  "baseApplicationId": "mark.via.gp",
+  "baseVersionName": "7.4.1",
+  "omegaVersionName": "7.4.1-omega",
+  "initialVersionCode": 2026112401,
+  "minSdkVersion": 19,
+  "targetSdkVersion": 36,
+  "installMode": "side-by-side",
+  "signing": {
+    "identity": "new OmegA signing key",
+    "reuseOriginalViaKey": false,
+    "keyStorage": "secure CI secret; never commit keystore or passwords"
+  },
+  "notes": [
+    "The OmegA package must install alongside the original Via Browser and must not overwrite it.",
+    "The Android application ID is distinct from the Java/Kotlin namespace; do not rename mark.via.* code packages unless required by verified runtime references.",
+    "Review and migrate manifest authorities, custom permissions, deep links, shortcuts, widgets, and any hard-coded package-ID references during APK repackaging.",
+    "Keep the original minimum SDK for compatibility unless later testing proves a safe change is needed.",
+    "The package ID and label are the approved build targets; apply them during the APK rebuild/signing stage."
+  ]
+}
