@@ -1,6 +1,6 @@
 # Step 04 — Browser Core Compatibility Baseline
 
-**Status:** Complete — static compatibility baseline and preservation contract committed  
+**Status:** Static compatibility baseline complete; reproducible CI preservation audit added but not yet run  
 **Base artifact:** Via Browser 7.4.1 APK  
 **Target identity:** `com.octopusworldpro.omega.browser`  
 **Compatibility floor:** Android API 19 (Android 4.4), subject to feature-specific runtime support
@@ -85,10 +85,21 @@ These checks are acceptance criteria for the later rebuild/device-test stage; th
 - [ ] Existing userscript install, execution, menu command and GM storage behavior.
 - [ ] Side-by-side install with original Via; verify OmegA does not overwrite it.
 
-## 7. Scope and completion statement
+## 7. Reproducible CI preservation audit
 
-**Completed in Step 04:** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails and a concrete regression acceptance checklist.
+Added `.github/workflows/omega-step4-core-audit.yml`. It can be run manually from GitHub Actions and also runs when the base APK or this workflow changes. The workflow:
+- Verifies the checked-in APK SHA-256 and ZIP integrity.
+- Decodes the APK with Apktool.
+- Checks static DEX/asset markers for WebView, cookies, downloads, history/bookmarks, incognito, reader mode and userscript APIs.
+- Confirms the base package and minSdk 19 remain unchanged.
+- Uploads decoded manifest and audit evidence as a short-lived artifact.
+
+This is a static regression guard, not an emulator test. Marker checks establish presence only, not successful feature execution. The workflow has been committed but has not yet been dispatched or observed passing.
+
+## 8. Scope and completion statement
+
+**Completed in Step 04:** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails, concrete runtime regression acceptance checklist, and a committed reproducible static CI preservation audit.
 
 **Not claimed:** source-level code changes, a rebuilt APK, live device compatibility, or passing regression tests. The repository currently contains the original compiled APK and audit/resource files, not the original Via source tree. The available environment also lacks the Android APK reverse-engineering/build tools needed to safely patch and rebuild this binary. Those implementation and runtime-test claims require the source/build toolchain and an Android test environment.
 
-Step 04 is complete as the browser-core compatibility specification and audit baseline. The next implementation stage is Step 05: extension manager architecture and integration.
+Step 04 is complete as a static compatibility specification and CI guard setup. The workflow result is pending. Actual browser-core code changes and runtime compatibility remain blocked until the original Android source project or a reliable decompilation/build toolchain and Android test runtime are available. The next planned stage is Step 05: extension manager architecture and integration.
