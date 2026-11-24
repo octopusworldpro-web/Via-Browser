@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="omega_brand_violet">#A855F7</color>
+    <color name="omega_brand_magenta">#D946EF</color>
+    <color name="omega_night">#090817</color>
+    <color name="omega_deep_violet">#100B2B</color>
+    <color name="omega_surface_light">#F7F5FC</color>
+    <color name="omega_surface_dark">#100B2B</color>
+    <color name="omega_text_dark">#F2EDFF</color>
+</resources>
