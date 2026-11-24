@@ -14,6 +14,14 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.*
+import android.text.Editable
+import android.text.TextWatcher
+import android.os.Handler
+import android.os.Looper
+import android.graphics.drawable.GradientDrawable
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(12, 16, 28)
@@ -24,6 +32,10 @@ class MainActivity : Activity() {
     private lateinit var address: EditText
     private lateinit var web: WebView
     private lateinit var progress: ProgressBar
+    private lateinit var suggestionPanel: LinearLayout
+    private val suggestionHandler = Handler(Looper.getMainLooper())
+    private var suppressSuggestions = false
+    private var suggestionTask: Runnable? = null
     private val tabs = mutableListOf<String>()
     private val history = mutableListOf<String>()
     private val bookmarks = mutableListOf<String>()
@@ -57,6 +69,13 @@ class MainActivity : Activity() {
         top.addView(address, LinearLayout.LayoutParams(0, 48, 1f))
         top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 48))
         root.addView(top)
+        suggestionPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 4, 12, 8); setBackgroundColor(panel); visibility = View.GONE }
+        root.addView(suggestionPanel, LinearLayout.LayoutParams(-1, -2))
+        address.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { if (!suppressSuggestions) requestSuggestions(s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: Editable?) {}
+        })
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100; if (Build.VERSION.SDK_INT >= 21) progressTintList = android.content.res.ColorStateList.valueOf(accent); visibility = View.GONE
         }
@@ -96,6 +115,50 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
+    private fun rounded(color: Int, radiusDp: Int): GradientDrawable = GradientDrawable().apply {
+        setColor(color); cornerRadius = radiusDp * resources.displayMetrics.density
+        setStroke((1 * resources.displayMetrics.density).toInt().coerceAtLeast(1), Color.argb(35, 170, 150, 255))
+    }
+
+    private fun requestSuggestions(raw: String) {
+        suggestionTask?.let { suggestionHandler.removeCallbacks(it) }
+        val query = raw.trim()
+        if (query.length < 2 || query.startsWith("http://") || query.startsWith("https://")) {
+            suggestionPanel.visibility = View.GONE
+            return
+        }
+        suggestionTask = Runnable {
+            Thread {
+                val results = mutableListOf<String>()
+                try {
+                    val endpoint = URL("https://suggestqueries.google.com/complete/search?client=firefox&q=" + Uri.encode(query))
+                    val connection = endpoint.openConnection() as HttpURLConnection
+                    connection.connectTimeout = 2500; connection.readTimeout = 2500
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0")
+                    val json = connection.inputStream.bufferedReader().use { it.readText() }
+                    val array = JSONArray(json).optJSONArray(1)
+                    if (array != null) for (i in 0 until array.length()) results.add(array.optString(i))
+                    connection.disconnect()
+                } catch (_: Exception) {}
+                runOnUiThread {
+                    if (address.text.toString().trim() != query || results.isEmpty()) return@runOnUiThread
+                    suggestionPanel.removeAllViews()
+                    results.take(6).forEach { value ->
+                        val row = TextView(this).apply {
+                            text = "⌕   $value"; textSize = 14f; setTextColor(ink)
+                            setPadding(12, 11, 12, 11); isClickable = true
+                            setOnClickListener { loadAddress(value) }
+                        }
+                        suggestionPanel.addView(row, LinearLayout.LayoutParams(-1, -2))
+                        suggestionPanel.addView(View(this).apply { setBackgroundColor(Color.argb(30, 210, 205, 240)) }, LinearLayout.LayoutParams(-1, 1))
+                    }
+                    suggestionPanel.visibility = View.VISIBLE
+                }
+            }.start()
+        }
+        suggestionHandler.postDelayed(suggestionTask!!, 280)
+    }
+
     private fun weight() = LinearLayout.LayoutParams(0, 48, 1f)
     private fun button(label: String, action: () -> Unit): TextView = TextView(this).apply {
         text = label; textSize = 22f; gravity = Gravity.CENTER; setTextColor(ink); setOnClickListener { action() }
@@ -109,40 +172,47 @@ class MainActivity : Activity() {
             value = if (looksLikeUrl) "https://$value" else "https://www.google.com/search?q=" + Uri.encode(value)
         }
         showBrowser()
+        suppressSuggestions = true
         address.setText(value)
+        suppressSuggestions = false
+        suggestionPanel.visibility = View.GONE
         web.loadUrl(value)
     }
 
     private fun showHome() {
         web.setVisibility(View.GONE)
+        suppressSuggestions = true
         address.setText("")
-        val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(24, 28, 24, 24); setBackgroundColor(bg) }
+        suppressSuggestions = false
+        suggestionPanel.visibility = View.GONE
+        val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(18, 22, 18, 18); setBackgroundColor(bg) }
         page.addView(TextView(this).apply { text = "Ω"; textSize = 64f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, 88))
         page.addView(TextView(this).apply { text = "OmegA Browser"; textSize = 25f; setTextColor(ink); gravity = Gravity.CENTER })
         page.addView(TextView(this).apply { text = "Fast • Private • Lightweight"; textSize = 13f; setTextColor(Color.LTGRAY); gravity = Gravity.CENTER })
         val search = EditText(this).apply {
-            hint = "Search the web"; setSingleLine(true); textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
-            setPadding(18, 8, 18, 8); setBackgroundColor(panel); imeOptions = EditorInfo.IME_ACTION_GO
+            hint = "Search or enter website"; setSingleLine(true); textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
+            setPadding(18, 8, 18, 8); background = rounded(panel, 18); imeOptions = EditorInfo.IME_ACTION_GO
             setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_GO) { loadAddress(text.toString()); true } else false }
         }
         val searchParams = LinearLayout.LayoutParams(-1, 54); searchParams.topMargin = 28; page.addView(search, searchParams)
-        val grid = GridLayout(this).apply { columnCount = 2; rowCount = 3 }
+        val grid = GridLayout(this).apply { columnCount = 3; rowCount = 2; useDefaultMargins = false }
         val shortcuts = listOf(
-            "Bookmarks" to { showBookmarks() }, "History" to { showHistory() },
-            "Downloads" to { showDownloads() }, "C3C FBState" to { showFbState() },
-            "Device Identity" to { showIdentity() }, "Settings" to { showSettings() }
+            Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
+            Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "C3C FBState", { showFbState() }),
+            Triple("⌁", "Device Identity", { showIdentity() }), Triple("⚙", "Settings", { showSettings() })
         )
         shortcuts.forEach { item ->
-            val tile = TextView(this).apply {
-                text = item.first; textSize = 14f; gravity = Gravity.CENTER; setTextColor(ink)
-                includeFontPadding = false
-                minHeight = 68
-                setBackgroundColor(panel); setPadding(8, 10, 8, 10); setOnClickListener { item.second() }
+            val tile = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(4, 12, 4, 10)
+                background = rounded(panel, 16); isClickable = true; isFocusable = true
+                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 25f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 34))
+                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 11f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1 }, LinearLayout.LayoutParams(-1, 25))
+                setOnClickListener { item.third() }
             }
-            val lp = GridLayout.LayoutParams().apply { width = 0; height = 72; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 6, 5, 6) }
+            val lp = GridLayout.LayoutParams().apply { width = 0; height = 78; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(4, 5, 4, 5) }
             grid.addView(tile, lp)
         }
-        val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 22; page.addView(grid, gridParams)
+        val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 16; page.addView(grid, gridParams)
         page.addView(TextView(this).apply { text = "Customized by NirZon"; textSize = 11f; setTextColor(Color.GRAY); gravity = Gravity.CENTER; setPadding(0, 22, 0, 0) })
         replaceWebWith(page)
     }
@@ -150,16 +220,17 @@ class MainActivity : Activity() {
     private fun replaceWebWith(view: View) {
         val index = root.indexOfChild(web)
         if (index >= 0) root.removeViewAt(index)
-        root.addView(view, index.coerceAtLeast(1), LinearLayout.LayoutParams(-1, 0, 1f))
+        root.addView(view, index.coerceAtLeast(3), LinearLayout.LayoutParams(-1, 0, 1f))
     }
     private fun showBrowser() {
         val index = root.indexOfChild(web)
         if (index < 0) {
-            val old = root.getChildAt(2)
-            if (old != null) root.removeViewAt(2)
-            root.addView(web, 2, LinearLayout.LayoutParams(-1, 0, 1f))
+            val contentIndex = root.indexOfChild(progress) + 1
+            if (contentIndex < root.childCount - 1) root.removeViewAt(contentIndex)
+            root.addView(web, contentIndex, LinearLayout.LayoutParams(-1, 0, 1f))
         }
         web.setVisibility(View.VISIBLE)
+        suggestionPanel.visibility = View.GONE
     }
 
     private fun showMainMenu() {
