@@ -45,12 +45,13 @@ private class OmegaMarkView(context: Context, private val markColor: Int) : View
         val w = width.toFloat()
         val h = height.toFloat()
         val path = Path().apply {
-            moveTo(w * 0.16f, h * 0.78f)
-            cubicTo(w * 0.10f, h * 0.38f, w * 0.27f, h * 0.10f, w * 0.50f, h * 0.10f)
-            cubicTo(w * 0.73f, h * 0.10f, w * 0.90f, h * 0.38f, w * 0.84f, h * 0.78f)
-            lineTo(w * 0.84f, h * 0.90f)
-            moveTo(w * 0.16f, h * 0.78f)
-            lineTo(w * 0.16f, h * 0.90f)
+            moveTo(w * 0.16f, h * 0.88f)
+            lineTo(w * 0.31f, h * 0.88f)
+            lineTo(w * 0.31f, h * 0.70f)
+            cubicTo(w * 0.31f, h * 0.34f, w * 0.39f, h * 0.12f, w * 0.50f, h * 0.12f)
+            cubicTo(w * 0.61f, h * 0.12f, w * 0.69f, h * 0.34f, w * 0.69f, h * 0.70f)
+            lineTo(w * 0.69f, h * 0.88f)
+            lineTo(w * 0.84f, h * 0.88f)
         }
         canvas.drawPath(path, paint)
     }
@@ -98,8 +99,8 @@ class MainActivity : Activity() {
 
     private fun buildShell() {
         root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
-        val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 10, 14, 10); setBackgroundColor(bg) }
-        top.addView(TextView(this).apply { text = "Ω"; textSize = 25f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(38, 56))
+        val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 6, 14, 6); setBackgroundColor(bg) }
+        top.addView(TextView(this).apply { text = "Ω"; textSize = 29f; typeface = android.graphics.Typeface.DEFAULT_BOLD; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(38, 70))
         address = EditText(this).apply {
             hint = "Search or enter address"; textSize = 15f; setSingleLine(true)
             setTextColor(ink); setHintTextColor(Color.LTGRAY); setPadding(16, 8, 12, 8)
@@ -108,8 +109,8 @@ class MainActivity : Activity() {
                 if (action == EditorInfo.IME_ACTION_GO || action == EditorInfo.IME_ACTION_DONE) { loadAddress(text.toString()); true } else false
             }
         }
-        top.addView(address, LinearLayout.LayoutParams(0, 56, 1f))
-        top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 56))
+        top.addView(address, LinearLayout.LayoutParams(0, 70, 1f))
+        top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 70))
         root.addView(top)
         suggestionPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 4, 12, 8); setBackgroundColor(panel); visibility = View.GONE }
         root.addView(suggestionPanel, LinearLayout.LayoutParams(-1, -2))
