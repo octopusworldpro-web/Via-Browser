@@ -36,6 +36,19 @@ class GeckoPocActivity : Activity() {
 
         val activeRuntime = runtime ?: GeckoRuntime.create(this).also { runtime = it }
         session = GeckoSession()
+        session.contentDelegate = object : GeckoSession.ContentDelegate {
+            override fun onTitleChange(session: GeckoSession, title: String?) {
+                if (::status.isInitialized && !title.isNullOrBlank()) {
+                    runOnUiThread {
+                        status.text = if (title.contains("OmegA Extension Active")) {
+                            "PASS: WebExtension content script executed"
+                        } else {
+                            "Page title: $title"
+                        }
+                    }
+                }
+            }
+        }
         session.navigationDelegate = object : GeckoSession.NavigationDelegate {
             override fun onCanGoBack(session: GeckoSession, value: Boolean) {
                 canGoBack = value
@@ -121,6 +134,10 @@ class GeckoPocActivity : Activity() {
         controls.addView(Button(this).apply {
             text = "Reload"
             setOnClickListener { session.reload() }
+        })
+        controls.addView(Button(this).apply {
+            text = "Test Extension"
+            setOnClickListener { navigate("https://example.com/") }
         })
         root.addView(controls)
         setContentView(root)
