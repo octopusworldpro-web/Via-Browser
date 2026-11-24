@@ -5,7 +5,6 @@ on:
     branches: [main, 'feature/**']
     paths:
       - 'app/**'
-      - 'gecko-poc/**'
       - 'scripts/**'
       - '*.gradle'
       - 'gradle.properties'
@@ -32,8 +31,6 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
-      - name: Validate bundled GeckoView WebExtension POC
-        run: node scripts/validate-gecko-extension-poc.js
       - name: Run utility and controller tests
         run: |
           node --test utilities/fbstate/fbstate.test.js
@@ -41,23 +38,12 @@ jobs:
           node --test utilities/android-integration/feature-controller.test.js
       - name: Build main WebView APK
         run: gradle :app:assembleDebug --stacktrace
-      - name: Build isolated GeckoView proof-of-concept APK
-        run: gradle :gecko-poc:assembleDebug --stacktrace
       - name: Verify APK
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           ls -lh app/build/outputs/apk/debug/app-debug.apk
-      - name: Verify GeckoView proof-of-concept APK
-        run: |
-          test -s gecko-poc/build/outputs/apk/debug/gecko-poc-debug.apk
-          ls -lh gecko-poc/build/outputs/apk/debug/gecko-poc-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: OmegA-Browser-native-debug
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        with:
-          name: OmegA-GeckoView-POC-debug
-          path: gecko-poc/build/outputs/apk/debug/gecko-poc-debug.apk
           if-no-files-found: error
