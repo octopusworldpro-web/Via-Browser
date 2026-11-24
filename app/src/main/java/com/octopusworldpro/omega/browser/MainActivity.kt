@@ -100,7 +100,10 @@ class MainActivity : Activity() {
     private fun buildShell() {
         root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 6, 14, 6); setBackgroundColor(bg) }
-        top.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(30, 34).apply { gravity = Gravity.CENTER })
+        top.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(38, 42).apply {
+            gravity = Gravity.CENTER
+            marginEnd = (8 * resources.displayMetrics.density).toInt()
+        })
         address = EditText(this).apply {
             hint = "Search or enter address"; textSize = 15f; setSingleLine(true)
             setTextColor(ink); setHintTextColor(Color.LTGRAY); setPadding(16, 8, 12, 8)
@@ -109,8 +112,10 @@ class MainActivity : Activity() {
                 if (action == EditorInfo.IME_ACTION_GO || action == EditorInfo.IME_ACTION_DONE) { loadAddress(text.toString()); true } else false
             }
         }
-        top.addView(address, LinearLayout.LayoutParams(0, 70, 1f))
-        top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 70))
+        top.addView(address, LinearLayout.LayoutParams(0, 70, 1f).apply {
+            marginEnd = (10 * resources.displayMetrics.density).toInt()
+        })
+        top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(38, 70))
         root.addView(top)
         suggestionPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 4, 12, 8); setBackgroundColor(panel); visibility = View.GONE }
         root.addView(suggestionPanel, LinearLayout.LayoutParams(-1, -2))
