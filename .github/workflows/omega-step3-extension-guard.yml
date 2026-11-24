@@ -8,6 +8,8 @@ on:
       - 'AUDIT/STEP-03-EXTENSION-RUNTIME.md'
       - 'AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md'
       - 'utilities/fbstate/**'
+      - 'utilities/device-identity/**'
+      - 'AUDIT/STEP-12-DEVICE-IDENTITY-CORE.md'
       - 'README.md'
       - '.github/workflows/omega-step3-extension-guard.yml'
 
@@ -57,7 +59,17 @@ jobs:
           assert fb['clearTemporaryDataOnExit'] is True
           assert set(fb['validateCookieNames']) == {'c_user', 'xs'}
           assert 'web_store' not in ext['plannedImportSources']
-          print('PASS: Web Store disabled; local-only FBState safety defaults verified')
+          di = cfg['deviceIdentityManager']
+          assert di['enabled'] is False
+          assert di['hardwareIdentifiersSupported'] is False
+          assert di['requireExplicitUserAction'] is True
+          assert di['requirePerProfileConsent'] is True
+          assert di['applyOnlyToBrowserExposedValues'] is True
+          assert set(di['supportedValues']) == {'userAgent', 'acceptLanguage', 'locale', 'timeZone'}
+          assert set(di['rejectedFields']) >= {'imei', 'serialNumber', 'androidId', 'hardwareId', 'fingerprint'}
+          print('PASS: Web Store disabled; FBState and Device Identity safety defaults verified')
           PY
       - name: Run FBState parser and exporter tests
         run: node --test utilities/fbstate/fbstate.test.js
+      - name: Run Device Identity profile tests
+        run: node --test utilities/device-identity/device-identity.test.js
