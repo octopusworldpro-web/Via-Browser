@@ -30,6 +30,7 @@ import android.graphics.drawable.GradientDrawable
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
+import java.io.File
 
 private class OmegaMarkView(context: Context, private val markColor: Int) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
