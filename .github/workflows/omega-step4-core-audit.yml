@@ -61,33 +61,36 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
           root = Path("work/base")
-          dex_files = list(root.glob("classes*.dex"))
-          assert dex_files, "No DEX files found after decode"
-          dex = b"".join(p.read_bytes() for p in dex_files)
+          smali_files = list(root.rglob("*.smali"))
+          assert smali_files, "Apktool produced no decoded smali files"
+          parts = []
+          for p in smali_files:
+              try:
+                  parts.append(p.read_text(errors="ignore"))
+              except OSError:
+                  pass
           assets = root / "assets"
-          asset_text = b""
           if assets.exists():
               for p in assets.rglob("*"):
                   if p.is_file():
                       try:
-                          asset_text += p.read_bytes() + b"\\n"
-                      except OSError:
+                          parts.append(p.read_text(errors="ignore"))
+                      except (OSError, UnicodeError):
                           pass
-          haystack = dex + asset_text
+          haystack = "\\n".join(parts).lower()
           checks = {
-              "WebView browser stack": [b"WebView", b"WebViewClient", b"WebChromeClient"],
-              "Cookie/session handling": [b"CookieManager"],
-              "Download handling": [b"DownloadManager"],
-              "History/bookmark support": [b"WebHistoryItem", b"bookmark"],
-              "Incognito mode marker": [b"incognito"],
-              "Reader mode assets": [b"reader"],
-              "Userscript API preservation": [b"GM_getValue", b"GM_setValue", b"GM_xmlhttpRequest"],
+              "WebView browser stack": ["webview", "webviewclient", "webchromeclient"],
+              "Cookie/session handling": ["cookiemanager"],
+              "Download handling": ["downloadmanager"],
+              "History/bookmark support": ["webhistoryitem", "bookmark"],
+              "Incognito mode marker": ["incognito"],
+              "Reader mode assets": ["reader"],
+              "Userscript API preservation": ["gm_getvalue", "gm_setvalue", "gm_xmlhttprequest"],
           }
           failed = []
           for label, needles in checks.items():
-              missing = [n.decode("ascii") for n in needles if n.lower() not in haystack.lower()]
+              missing = [needle for needle in needles if needle not in haystack]
               status = "PASS" if not missing else "FAIL"
               print(f"{status}: {label}" + (f" (missing: {', '.join(missing)})" if missing else ""))
               if missing:
