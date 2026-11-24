@@ -1,0 +1,13 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.octopusworldpro.omega.browser'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.octopusworldpro.omega.browser'
+        minSdk 19
+        targetSdk 28
+        versionCode 2026112402
+        versionName '1.0.0-omega-source'
+    }
+}
