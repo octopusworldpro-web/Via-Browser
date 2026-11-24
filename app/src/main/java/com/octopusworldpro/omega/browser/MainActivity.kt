@@ -36,6 +36,7 @@ class MainActivity : Activity() {
     private lateinit var root: LinearLayout
     private lateinit var address: EditText
     private lateinit var web: WebView
+    private var contentView: View? = null
     private lateinit var progress: ProgressBar
     private lateinit var suggestionPanel: LinearLayout
     private val suggestionHandler = Handler(Looper.getMainLooper())
@@ -248,7 +249,7 @@ class MainActivity : Activity() {
             override fun afterTextChanged(s: Editable?) {}
         })
         val searchParams = LinearLayout.LayoutParams(-1, 54); searchParams.topMargin = 28; page.addView(search, searchParams)
-        val grid = GridLayout(this).apply { columnCount = 3; rowCount = 2; useDefaultMargins = false }
+        val grid = GridLayout(this).apply { columnCount = 3; useDefaultMargins = false; alignmentMode = GridLayout.ALIGN_BOUNDS }
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
             Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "C3C FBState", { showFbState() }),
@@ -259,13 +260,13 @@ class MainActivity : Activity() {
         )
         shortcuts.forEach { item ->
             val tile = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(4, 12, 4, 10)
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(4, 6, 4, 6)
                 background = rounded(panel, 16); isClickable = true; isFocusable = true
-                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 25f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 34))
-                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 11f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1 }, LinearLayout.LayoutParams(-1, 25))
+                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 25f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 32))
+                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 12f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1; includeFontPadding = false }, LinearLayout.LayoutParams(-1, 25))
                 setOnClickListener { item.third() }
             }
-            val lp = GridLayout.LayoutParams().apply { width = 0; height = 78; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(4, 5, 4, 5) }
+            val lp = GridLayout.LayoutParams().apply { width = 0; height = 88; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(4, 5, 4, 5) }
             grid.addView(tile, lp)
         }
         val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 16; page.addView(grid, gridParams)
@@ -274,18 +275,23 @@ class MainActivity : Activity() {
     }
 
     private fun replaceWebWith(view: View) {
-        val index = root.indexOfChild(web)
-        if (index >= 0) root.removeViewAt(index)
-        root.addView(view, index.coerceAtLeast(3), LinearLayout.LayoutParams(-1, 0, 1f))
+        val current = contentView ?: web
+        val existingIndex = root.indexOfChild(current)
+        val index = if (existingIndex >= 0) existingIndex else root.indexOfChild(progress) + 1
+        if (existingIndex >= 0) root.removeViewAt(existingIndex)
+        contentView = view
+        root.addView(view, index.coerceAtLeast(3).coerceAtMost(root.childCount), LinearLayout.LayoutParams(-1, 0, 1f))
     }
     private fun showBrowser() {
-        val index = root.indexOfChild(web)
-        if (index < 0) {
-            val contentIndex = root.indexOfChild(progress) + 1
-            if (contentIndex < root.childCount) root.removeViewAt(contentIndex)
-            root.addView(web, contentIndex, LinearLayout.LayoutParams(-1, 0, 1f))
+        val current = contentView
+        if (current !== web) {
+            val oldIndex = current?.let { root.indexOfChild(it) } ?: -1
+            val contentIndex = if (oldIndex >= 0) oldIndex else root.indexOfChild(progress) + 1
+            if (oldIndex >= 0) root.removeViewAt(oldIndex)
+            contentView = web
+            root.addView(web, contentIndex.coerceAtLeast(3).coerceAtMost(root.childCount), LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        web.setVisibility(View.VISIBLE)
+        web.visibility = View.VISIBLE
         suggestionPanel.visibility = View.GONE
     }
 
