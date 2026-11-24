@@ -66,6 +66,13 @@ jobs:
           node.set(android + "versionName", "7.4.1-omega")
           node.set(android + "versionCode", "2026112401")
 
+          # Force the launcher/application label directly in the manifest;
+          # localized resource aliases in the base APK otherwise keep showing "Via".
+          application = node.find("application")
+          if application is None:
+              raise SystemExit("AndroidManifest.xml has no application element")
+          application.set(android + "label", "OmegA Browser")
+
           # Migrate package-scoped manifest authorities and custom permission names.
           for element in node.iter():
               for key, value in list(element.attrib.items()):
