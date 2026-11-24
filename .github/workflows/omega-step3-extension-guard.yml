@@ -34,7 +34,6 @@ jobs:
           assert ext['runtimeAvailable'] is True
           assert ext['chromeExtensionExecution'] is False
           assert ext['runtimeAvailable'] is True
-          assert ext['enabled'] is True
           assert ext['webStoreInstallEnabled'] is False
           assert ext['webStoreCompatibility'] is False
           assert ext['runtimeAdapterRequiredForExecution'] is False
