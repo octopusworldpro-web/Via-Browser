@@ -7,6 +7,8 @@ on:
       - 'Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk'
       - '.github/workflows/omega-step2-identity.yml'
       - 'config/app-identity.json'
+      - 'branding/omega-launcher-legacy.svg'
+      - 'branding/android-res/**'
 
 permissions:
   contents: read
@@ -122,6 +124,22 @@ jobs:
           print(f"Identity applied: {old_id} -> {new_id}")
           PY
 
+      - name: Generate API 19–25 legacy launcher icons
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          mkdir -p work/legacy-icons
+          for entry in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            density="${entry%%:*}"
+            pixels="${entry##*:}"
+            mkdir -p "work/legacy-icons/mipmap-${density}"
+            rsvg-convert -w "${pixels}" -h "${pixels}" branding/omega-launcher-legacy.svg \
+              -o "work/legacy-icons/mipmap-${density}/ic_launcher.png"
+          done
+          cp -R work/legacy-icons/mipmap-* work/decoded/res/
+          file work/decoded/res/mipmap-*/ic_launcher.png
+          test "$(find work/decoded/res -path '*/ic_launcher.png' | wc -l)" -ge 5
+
       - name: Rebuild unsigned OmegA APK
         run: |
           apktool b work/decoded -o work/OmegA-Browser-unsigned.apk
@@ -147,6 +165,9 @@ jobs:
           grep -F "versionName='7.4.1-omega'" work/badging.txt
           grep -F "sdkVersion:'19'" work/badging.txt
           grep -F "application-icon-160:" work/badging.txt
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            unzip -l work/OmegA-Browser.apk | grep -F "res/mipmap-${density}/ic_launcher.png"
+          done
           unzip -l work/OmegA-Browser.apk | grep -F "res/mipmap-anydpi-v26/ic_launcher.xml"
           unzip -l work/OmegA-Browser.apk | grep -F "res/drawable/omega_launcher_foreground.xml"
           apksigner verify --verbose work/OmegA-Browser.apk
@@ -154,7 +175,7 @@ jobs:
       - name: Upload test APK and build evidence
         uses: actions/upload-artifact@v4
         with:
-          name: OmegA-Browser-step2-test-build
+          name: OmegA-Browser-step3-branding-test-build
           path: |
             work/OmegA-Browser.apk
             work/badging.txt
