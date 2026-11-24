@@ -633,7 +633,7 @@ class MainActivity : Activity() {
                 val status = if (info == null) "Error: package metadata could not be read" else if (info.compatible) "Partial: top-frame page-context content scripts only" else "Incompatible: ${info.incompatibility}"
                 val detailText = buildString {
                     append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
-                    append("Storage: ${info?.storageBytes ?: 0} bytes\nSHA-256 (manifest): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
+                    append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (manifest): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
                 }
                 val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
                     .setMessage(detailText)
@@ -684,12 +684,10 @@ class MainActivity : Activity() {
                         Toast.makeText(this, "Extension removed", Toast.LENGTH_SHORT).show()
                         showExtensions()
                     }.setNeutralButton("Clear data") { _, _ ->
-                        val cleared = dir.listFiles()?.filter { it.name != "manifest.json" && it.name != "content.js" }?.sumOf { file ->
-                            val size = if (file.isFile) file.length() else file.walkTopDown().filter { it.isFile }.sumOf { it.length() }
-                            file.deleteRecursively()
-                            size
-                        } ?: 0L
-                        Toast.makeText(this, "Extension-owned data cleared ($cleared bytes)", Toast.LENGTH_SHORT).show()
+                        val dataDir = File(filesDir, "extension-data/${dir.name}")
+                        val cleared = if (dataDir.exists()) dataDir.walkTopDown().filter { it.isFile }.sumOf { it.length() } else 0L
+                        dataDir.deleteRecursively()
+                        Toast.makeText(this, "Extension data cleared ($cleared bytes)", Toast.LENGTH_SHORT).show()
                         showExtensions()
                     }.show().getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = enabled || info?.compatible == true
             }.setNegativeButton("Close", null).show()
