@@ -30,6 +30,11 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Run utility and controller tests
+        run: |
+          node --test utilities/fbstate/fbstate.test.js
+          node --test utilities/device-identity/device-identity.test.js
+          node --test utilities/android-integration/feature-controller.test.js
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK
