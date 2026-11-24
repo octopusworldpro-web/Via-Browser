@@ -121,7 +121,43 @@ jobs:
                       st.write(strings, encoding="utf-8", xml_declaration=True)
               except ET.ParseError:
                   raise
-          print(f"Identity applied: {old_id} -> {new_id}")
+          # Apply a small platform-level OmegA accent overlay without replacing
+          # Via's custom layouts, navigation, or day/night theme resources.
+          values = root / "res" / "values"
+          brand_colors = values / "omega_brand_colors.xml"
+          brand_colors.write_text(
+              '<?xml version="1.0" encoding="utf-8"?>\\n'
+              '<resources>\\n'
+              '    <color name="omega_violet">#A855F7</color>\\n'
+              '    <color name="omega_magenta">#D946EF</color>\\n'
+              '    <color name="omega_dark">#100B2B</color>\\n'
+              '</resources>\\n', encoding="utf-8"
+          )
+          overlay = values / "omega_brand_theme.xml"
+          overlay.write_text(
+              '<?xml version="1.0" encoding="utf-8"?>\\n'
+              '<resources>\\n'
+              '    <style name="omega_brand_theme" parent="@style/t">\\n'
+              '        <item name="android:colorAccent">@color/omega_violet</item>\\n'
+              '        <item name="android:colorControlActivated">@color/omega_violet</item>\\n'
+              '        <item name="android:colorControlHighlight">@color/omega_magenta</item>\\n'
+              '    </style>\\n'
+              '</resources>\\n', encoding="utf-8"
+          )
+          application.set(android + "theme", "@style/omega_brand_theme")
+
+          # The base app's About menu label is resource-backed as "tw".
+          # Update only the default resource; leave translated strings untouched.
+          default_strings = values / "strings.xml"
+          st = ET.parse(default_strings)
+          about_label = next((item for item in st.getroot().findall("string")
+                              if item.attrib.get("name") == "tw"), None)
+          if about_label is None:
+              raise SystemExit("Expected About label resource 'tw' was not found")
+          about_label.text = "About OmegA Browser · Customized by NirZon"
+          st.write(default_strings, encoding="utf-8", xml_declaration=True)
+
+          print(f"Identity and OmegA theme applied: {old_id} -> {new_id}")
           PY
 
       - name: Inspect existing About, theme and splash implementation
@@ -175,6 +211,8 @@ jobs:
           aapt dump badging work/OmegA-Browser.apk | tee work/badging.txt
           grep -F "package: name='com.octopusworldpro.omega.browser'" work/badging.txt
           grep -F "application-label:'OmegA Browser'" work/badging.txt
+          unzip -p work/OmegA-Browser.apk res/values/omega_brand_theme.xml | grep -F "omega_brand_theme"
+          unzip -p work/OmegA-Browser.apk res/values/strings.xml | grep -F "About OmegA Browser"
           grep -F "versionName='7.4.1-omega'" work/badging.txt
           grep -F "sdkVersion:'19'" work/badging.txt
           grep -F "application-icon-160:" work/badging.txt
@@ -188,7 +226,7 @@ jobs:
       - name: Upload test APK and build evidence
         uses: actions/upload-artifact@v4
         with:
-          name: OmegA-Browser-step3-branding-test-build
+          name: OmegA-Browser-step4-ui-branding-test-build
           path: |
             work/OmegA-Browser.apk
             work/badging.txt
