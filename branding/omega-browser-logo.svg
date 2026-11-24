@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>OmegA Browser</title>
+  <desc>Three forward-leaning blue, coral and gold ribbons form a compact abstract OmegA mark.</desc>
+  <rect width="512" height="512" rx="112" fill="#101827"/>
+  <g transform="translate(54 54)">
+    <path d="M74 126c0-12 9-21 21-21h36v204l-74 76 17-259Z" fill="#19A7F5"/>
+    <path d="M214 76 270 62l101 254c7 18-1 38-19 45l-48 19L214 76Z" fill="#FF5A45"/>
+    <path d="M278 62 333 68l74 250c5 18-6 36-24 40l-49 11L278 62Z" fill="#FFC247"/>
+    <path d="M111 350 224 226l25 63-91 99c-12 13-31 15-45 5l-2-2Z" fill="#F7F9FC" opacity=".96"/>
+  </g>
+</svg>
