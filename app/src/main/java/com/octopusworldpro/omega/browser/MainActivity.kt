@@ -3,6 +3,7 @@ package com.octopusworldpro.omega.browser
 import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Build
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -33,8 +34,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = bg
-        window.navigationBarColor = bg
+        if (Build.VERSION.SDK_INT >= 21) {\n            window.statusBarColor = bg\n            window.navigationBarColor = bg\n        }
         buildShell()
         showHome()
     }
@@ -55,7 +55,7 @@ class MainActivity : Activity() {
         top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 48))
         root.addView(top)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; progressTintList = android.content.res.ColorStateList.valueOf(accent); visibility = View.GONE
+            max = 100; if (Build.VERSION.SDK_INT >= 21) progressTintList = android.content.res.ColorStateList.valueOf(accent); visibility = View.GONE
         }
         root.addView(progress, LinearLayout.LayoutParams(-1, 3))
         web = WebView(this).apply {
