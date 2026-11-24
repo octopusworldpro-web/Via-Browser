@@ -1,42 +1,50 @@
 # Roadmap Step 3 — Chrome Extension Runtime + Extension Manager
 
-**Status:** Manager architecture exists; runtime implementation blocked pending a buildable Android source project and a selected compatible engine.
+**Status: BLOCKED — engine feasibility evaluated; no runtime is integrated into the OmegA APK.**
 
 ## Reused work (do not duplicate)
 
-- `AUDIT/STEP-05-EXTENSION-MANAGER.md` already defines manager screens, responsibilities, lifecycle, metadata, permission policy, runtime adapter contract, security constraints and acceptance tests.
-- `AUDIT/STEP-06-RUNTIME-RECONNAISSANCE.md` records the decompilation inventory.
-- `AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md` records the missing runtime evidence and implementation blocker.
-- `config/extension-manager.json` is the feature gate. It now explicitly distinguishes planned import sources from implemented support.
+- AUDIT/STEP-05-EXTENSION-MANAGER.md defines manager screens, lifecycle, metadata, permission policy, runtime adapter contract, security constraints and acceptance tests.
+- AUDIT/STEP-06-RUNTIME-RECONNAISSANCE.md records the decompilation inventory.
+- AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md records missing runtime evidence and the source-project blocker.
+- AUDIT/STEP-08-ENGINE-DECISION.md records the engine feasibility decision and verified GeckoView compatibility boundary.
+- config/extension-manager.json is the feature gate.
 
-## Current verified boundary
+## Verified current boundary
 
-The inspected Via APK has a userscript subsystem, but the static inventory found no Chrome/WebExtension runtime indicators. Userscripts are not Chrome extensions. The manager must remain disabled until an actual runtime adapter is integrated and tested.
+The inspected Via APK has a userscript subsystem, but static reconnaissance found no Chrome/WebExtension runtime indicators. Userscripts are not Chrome extensions. The repository contains a compiled APK and resource-repackaging workflows, not the original Android Studio/Gradle project.
 
-The repository contains a compiled APK and resource-repackaging workflows, not the original Android Studio/Gradle project. Resource repackaging cannot safely add the required runtime, UI event wiring, isolated script contexts or persistent lifecycle.
+## Feasibility outcome
 
-## Runtime work required
+GeckoView is a documented embedded WebExtension engine candidate, but it is not a drop-in Chrome MV3 runtime. Firefox's background implementation does not support Chrome's background.service_worker key and instead uses background scripts/event pages. Integrating GeckoView would replace the existing Via WebView engine and require browser-core migration and regression work. This is not approved as a silent change because it risks Via feature preservation and the lightweight requirement.
 
-1. Select and document an engine strategy compatible with the product's lightweight constraint and required Chrome API coverage.
-2. Implement Manifest V3 parsing and safe package validation.
-3. Implement isolated content-script contexts and supported navigation injection phases.
-4. Implement background worker/event lifecycle and extension messaging.
-5. Implement a scoped `chrome.*` API adapter with explicit unsupported-API reporting.
-6. Implement per-extension storage, permission brokerage and atomic lifecycle operations.
-7. Wire the existing manager contract to the runtime adapter.
-8. Preserve Via userscripts, browser cookies, history, bookmarks, downloads and incognito isolation.
-9. Add JVM/unit/instrumentation tests and Android emulator/device regression tests.
+A custom extension runtime on the existing WebView would require implementing isolated script contexts, background lifecycle, browser APIs, permission brokerage, storage and navigation integration. It is not a safe resource-only/DEX patch.
 
-## Feature safety gate
+## Current safety gate
 
-Until those requirements pass:
-- Manager remains disabled.
+- Extension manager remains disabled.
 - ZIP/CRX/Web Store are planned sources, not supported import features.
-- No package may be labelled installed/runnable merely because metadata was parsed.
+- No package is labelled installed/runnable merely because metadata is parsed.
 - No extension code executes during import or permission review.
 - No broad cookie, password, history or private-tab access is exposed.
 - Existing Via userscripts remain separate and untouched.
 
-## Completion criteria
+## What is complete in Step 3
 
-Step 3 is complete only when a real runtime is integrated into a buildable Android project, the manager is wired to it, supported APIs are tested, unsupported APIs are disclosed, and a test APK passes regression tests. A design document or CI feature gate alone does not satisfy this acceptance gate.
+- Existing manager architecture reused; no duplicate manager design created.
+- APK reconnaissance evidence checked and referenced.
+- Engine feasibility evaluated and decision documented.
+- GeckoView's real WebExtension support and MV3 background incompatibility recorded.
+- Safety gate CI is in place and remains closed.
+
+## What remains before Step 3 can be marked complete
+
+1. Obtain a buildable, licensed Via Android source/Gradle project, or approve a separate browser shell.
+2. Decide whether replacing Via WebView with GeckoView is acceptable.
+3. Build and measure a GeckoView proof-of-concept if engine replacement is approved.
+4. Implement a tested WebExtension compatibility subset and report unsupported APIs.
+5. Integrate isolated content scripts, background lifecycle, messaging, storage and permission broker.
+6. Wire the manager UI to the actual runtime.
+7. Pass automated tests and Android emulator/physical-device regression tests.
+
+**Honest status:** Step 3 feasibility work is complete, but the requested runtime feature is not. The extension runtime must remain disabled until the missing source/engine decision is resolved.
