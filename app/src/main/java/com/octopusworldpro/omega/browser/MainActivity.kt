@@ -48,6 +48,8 @@ class MainActivity : Activity() {
     private var identityLanguage = ""
     private var identityUserAgent = ""
     private var pendingImport = 0
+    private var fbStateContent: String? = null
+    private var pendingExportContent: String? = null
     private var searchEngine = "Google"
     private lateinit var prefs: android.content.SharedPreferences
     private var filePathCallback: android.webkit.ValueCallback<Array<Uri>>? = null
@@ -372,17 +374,31 @@ class MainActivity : Activity() {
             }.setNegativeButton("Cancel", null).show()
     }
     private fun showFbState() {
-        val options = arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file")
+        val options = if (fbStateContent == null) arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file")
+            else arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file", "Export imported data")
         AlertDialog.Builder(this).setTitle("C3C FBState Utility")
-            .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; preview is masked.")
+            .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; values are masked and never uploaded.")
             .setItems(options) { _, which ->
-                AlertDialog.Builder(this).setTitle("Import sensitive session data?")
-                    .setMessage("You are choosing a local file. Cookies can grant account access. OmegA does not upload or auto-read browser cookies.")
-                    .setPositiveButton("I understand") { _, _ ->
-                        pendingImport = which
-                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
-                        startActivityForResult(intent, REQUEST_IMPORT)
-                    }.setNegativeButton("Cancel", null).show()
+                if (which == 3) {
+                    AlertDialog.Builder(this).setTitle("Export sensitive session data?")
+                        .setMessage("The backup contains account session cookies. Store it only in a trusted private location.")
+                        .setPositiveButton("Continue") { _, _ ->
+                            pendingExportContent = fbStateContent
+                            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                addCategory(Intent.CATEGORY_OPENABLE); type = "text/plain"
+                                putExtra(Intent.EXTRA_TITLE, "omegA-fbstate-backup.txt")
+                            }
+                            startActivityForResult(intent, REQUEST_EXPORT)
+                        }.setNegativeButton("Cancel", null).show()
+                } else {
+                    AlertDialog.Builder(this).setTitle("Import sensitive session data?")
+                        .setMessage("You are choosing a local file. OmegA does not upload or auto-read browser cookies.")
+                        .setPositiveButton("I understand") { _, _ ->
+                            pendingImport = which
+                            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
+                            startActivityForResult(intent, REQUEST_IMPORT)
+                        }.setNegativeButton("Cancel", null).show()
+                }
             }.setNegativeButton("Close", null).show()
     }
     @Deprecated("Legacy activity result retained for API 19 compatibility")
@@ -394,15 +410,50 @@ class MainActivity : Activity() {
             filePathCallback = null
             return
         }
+        if (requestCode == REQUEST_EXPORT) {
+            val uri = if (resultCode == RESULT_OK) data?.data else null
+            try {
+                if (uri != null && pendingExportContent != null) contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(pendingExportContent!!) }
+                Toast.makeText(this, if (uri != null) "FBState backup exported locally" else "Export cancelled", Toast.LENGTH_LONG).show()
+            } catch (_: Exception) { Toast.makeText(this, "Could not export backup", Toast.LENGTH_LONG).show() }
+            pendingExportContent = null
+            return
+        }
         if (requestCode != REQUEST_IMPORT || resultCode != RESULT_OK || data?.data == null) return
         try {
             val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { it.readText() } ?: ""
             val names = when (pendingImport) {
-                0 -> Regex("\"name\"\\s*:\\s*\"([^\"]+)\"").findAll(source).map { it.groupValues[1] }.toList()
-                1 -> source.split(";").map { it.trim().substringBefore("=") }.filter { it.isNotEmpty() }
-                else -> source.lines().filter { !it.startsWith("#") && it.split(Regex("\\s+")).size >= 7 }.map { it.split(Regex("\\s+"))[5] }
+                0 -> {
+                    val rootJson = org.json.JSONTokener(source).nextValue()
+                    val array = if (rootJson is org.json.JSONObject) rootJson.optJSONArray("cookies") else rootJson as? JSONArray
+                    if (array == null) throw IllegalArgumentException("AppState must contain a cookie array")
+                    (0 until array.length()).mapNotNull { i ->
+                        val item = array.optJSONObject(i) ?: return@mapNotNull null
+                        val name = item.optString("name", item.optString("key"))
+                        val value = item.optString("value")
+                        val domain = item.optString("domain", ".facebook.com").removePrefix(".")
+                        if (name.isBlank() || value.isBlank()) throw IllegalArgumentException("Cookie name/value is empty")
+                        if (!(domain == "facebook.com" || domain.endsWith(".facebook.com") || domain == "messenger.com" || domain.endsWith(".messenger.com"))) throw IllegalArgumentException("Unsupported cookie domain")
+                        name
+                    }
+                }
+                1 -> source.split(";").map {
+                    val pair = it.trim().split("=", limit = 2)
+                    if (pair.size != 2 || pair[0].isBlank() || pair[1].isBlank()) throw IllegalArgumentException("Invalid Cookie header")
+                    pair[0].trim()
+                }
+                else -> source.lines().filter { it.isNotBlank() && !it.startsWith("#") && !it.startsWith("#HttpOnly_") }.map {
+                    val fields = it.split("\\t")
+                    if (fields.size != 7) throw IllegalArgumentException("Invalid Netscape cookie row")
+                    val domain = fields[0].removePrefix(".")
+                    if (!(domain == "facebook.com" || domain.endsWith(".facebook.com") || domain == "messenger.com" || domain.endsWith(".messenger.com"))) throw IllegalArgumentException("Unsupported cookie domain")
+                    if (fields[5].isBlank() || fields[6].isBlank()) throw IllegalArgumentException("Cookie name/value is empty")
+                    fields[5]
+                }
             }.distinct()
             val valid = names.contains("c_user") && names.contains("xs")
+            if (!valid) throw IllegalArgumentException("Required c_user and xs cookies are missing")
+            fbStateContent = source
             val preview = names.joinToString("\n") { "$it = ••••••••" }
             AlertDialog.Builder(this).setTitle(if (valid) "FBState validated" else "Validation incomplete")
                 .setMessage("Cookie names: ${names.size}\nRequired c_user + xs: ${if (valid) "present" else "missing"}\n\n$preview")
@@ -440,5 +491,5 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         if (::web.isInitialized && web.canGoBack() && web.visibility == View.VISIBLE) web.goBack() else showHome()
     }
-    companion object { private const val REQUEST_IMPORT = 4310; private const val REQUEST_FILE = 4311 }
+    companion object { private const val REQUEST_IMPORT = 4310; private const val REQUEST_FILE = 4311; private const val REQUEST_EXPORT = 4312 }
 }
