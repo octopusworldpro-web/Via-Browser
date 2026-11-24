@@ -1,6 +1,6 @@
 # Step 02 — OmegA Browser App Identity
 
-**Status:** Complete — application identity and side-by-side installation contract finalized  
+**Status:** Identity contract and cloud repack workflow implemented; APK build/install validation pending  
 **Base APK:** Via Browser 7.4.1 (`mark.via.gp`)
 
 ## Approved identity
@@ -30,6 +30,17 @@
 
 The approved values are stored in `config/app-identity.json`.
 
+## Cloud build workflow
+
+`.github/workflows/omega-step2-identity.yml` now provides a manually triggered GitHub Actions pipeline that:
+- installs Java, Android Build Tools 36.0.0 and Apktool 2.11.1;
+- decodes the checked-in Via 7.4.1 APK;
+- applies the OmegA application ID, version name/code and app label, and migrates package-scoped manifest strings;
+- rebuilds, zipaligns, signs with a temporary test-only key, and verifies the package identity;
+- uploads the test APK and build evidence as a short-lived Actions artifact.
+
+The temporary key is deliberately **not** a production release key. A stable protected OmegA keystore must be configured as GitHub Actions secrets before a distributable release build.
+
 ## Scope boundary
 
-This step finalizes the app identity contract. It does **not** claim that the APK has already been repackaged or signed. Applying these values to the binary and verifying side-by-side installation belongs to the APK rebuild/signing and device-test stages.
+The identity contract and cloud build workflow are committed. The workflow has not yet been dispatched from this session, so a successful rebuilt APK, full manifest-reference migration, and side-by-side device installation are **not yet verified**. Do not mark APK-level Step 2 complete until the Actions run passes and the artifact is inspected/installed. The base APK has no matching Android source project in this repository, so this is a controlled APK repackaging path, not a source-based rebuild.
