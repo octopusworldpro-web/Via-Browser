@@ -4,7 +4,7 @@
 
 ### Fast • Lightweight • Privacy-focused
 
-**A customized Via Browser 7.4.1 build**
+**A lightweight Android browser project with a newly authored native source foundation**
 
 [![Build](https://github.com/octopusworldpro-web/Via-Browser/actions/workflows/omega-step2-identity.yml/badge.svg)](https://github.com/octopusworldpro-web/Via-Browser/actions/workflows/omega-step2-identity.yml)
 
@@ -16,7 +16,7 @@
 
 ## Project
 
-OmegA Browser is a separately installable Android browser customization based on Via Browser 7.4.1. The goal is to preserve the compact browser experience while developing OmegA features in distinct, testable stages.
+OmegA Browser is a separately installable Android browser customization based on Via Browser 7.4.1. The repository retains the Via 7.4.1 audit/repackaging work and now also contains a new independent Kotlin/Android source project. The new project is an initial browser foundation, not a feature-for-feature Via clone.
 
 | Detail | Value |
 |---|---|
@@ -32,11 +32,11 @@ OmegA Browser is a separately installable Android browser customization based on
 | Step | Scope | Status |
 |---|---|---|
 | 1 | Base reverse engineering + OmegA identity & branding | **CI/build complete**; device verification pending |
-| 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI PASS; in-app UI/runtime tests blocked by missing Android source project |
+| 2 | Browser core preservation + custom OmegA UI | Initial native OmegA UI/source foundation added; full Via feature parity not yet ported |
 | 3 | Lightweight local extension path (ZIP/CRX only) | Web Store excluded; runtime blocked by missing Android source project |
 | 4 | Local package validation, install/update/uninstall + storage/runtime infrastructure | Not implemented |
-| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Parser/profile cores + app-facing controllers implemented and CI-tested; Android UI/WebView wiring pending |
-| 6 | Full integration, security audit, device tests and release APK | Pending |
+| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Core/controller + initial Android entry screens added; full adapter/parser/export integration pending |
+| 6 | Full integration, security audit, device tests and release APK | Pending; new native source build must pass first |
 
 ### Step 1 evidence
 
@@ -82,6 +82,6 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - [Step 5 — App-facing utility controllers](AUDIT/STEP-13-APP-FACING-UTILITY-CONTROLLERS.md)
 - [Step 6 — Measured APK size and release-readiness gates](AUDIT/STEP-14-APK-SIZE-AND-RELEASE-READINESS.md)
 
-## Build artifacts
+## Native Android source\n\nA new Kotlin/Android Studio project is available under `app/` with build instructions and current implementation limits in [ANDROID-SOURCE/README.md](ANDROID-SOURCE/README.md). CI build workflow: [OmegA Android Source Build](.github/workflows/android-source-build.yml). This initial source is an independent lightweight implementation; it does not yet reproduce every Via Browser 7.4.1 feature.\n\n## Build artifacts
 
 Open [GitHub Actions](https://github.com/octopusworldpro-web/Via-Browser/actions/workflows/omega-step2-identity.yml) and select a successful run to download the test APK artifact. The latest inspected branded test APK measured 4,700,000 bytes (4.70 MB / 4.48 MiB). See the [APK size and release-readiness audit](AUDIT/STEP-14-APK-SIZE-AND-RELEASE-READINESS.md). The artifact is not a production release.
