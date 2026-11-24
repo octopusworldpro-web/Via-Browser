@@ -80,7 +80,8 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - [Step 5 — FBState core implementation and tests](AUDIT/STEP-11-FBSTATE-CORE-IMPLEMENTATION.md)
 - [Step 5 — Device Identity Manager core and safety scope](AUDIT/STEP-12-DEVICE-IDENTITY-CORE.md)
 - [Step 5 — App-facing utility controllers](AUDIT/STEP-13-APP-FACING-UTILITY-CONTROLLERS.md)
+- [Step 6 — Measured APK size and release-readiness gates](AUDIT/STEP-14-APK-SIZE-AND-RELEASE-READINESS.md)
 
 ## Build artifacts
 
-Open [GitHub Actions](https://github.com/octopusworldpro-web/Via-Browser/actions/workflows/omega-step2-identity.yml) and select a successful run to download the test APK artifact. The artifact is not a production release.
+Open [GitHub Actions](https://github.com/octopusworldpro-web/Via-Browser/actions/workflows/omega-step2-identity.yml) and select a successful run to download the test APK artifact. The latest inspected branded test APK measured 4,700,000 bytes (4.70 MB / 4.48 MiB). See the [APK size and release-readiness audit](AUDIT/STEP-14-APK-SIZE-AND-RELEASE-READINESS.md). The artifact is not a production release.
