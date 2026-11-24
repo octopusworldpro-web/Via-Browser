@@ -1,4 +1,4 @@
-name: OmegA Browser — Step 3 Extension Runtime Safety Gate
+name: OmegA Browser — Lightweight Features Safety Gate
 
 on:
   workflow_dispatch:
@@ -6,42 +6,59 @@ on:
     paths:
       - 'config/extension-manager.json'
       - 'AUDIT/STEP-03-EXTENSION-RUNTIME.md'
-      - 'AUDIT/STEP-05-EXTENSION-MANAGER.md'
+      - 'AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md'
+      - 'README.md'
       - '.github/workflows/omega-step3-extension-guard.yml'
 
 permissions:
   contents: read
 
 jobs:
-  extension-safety-gate:
+  lightweight-features-safety-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate runtime gate and least-privilege defaults
+      - name: Validate extension and FBState safety defaults
         run: |
           python3 - <<'PY'
           import json
           from pathlib import Path
+
           cfg = json.loads(Path('config/extension-manager.json').read_text())
           ext = cfg['extensionManager']
           assert ext['enabled'] is False
           assert ext['runtimeAvailable'] is False
           assert ext['chromeExtensionExecution'] is False
           assert ext['webStoreInstallEnabled'] is False
+          assert ext['webStoreCompatibility'] is False
           assert ext['runtimeAdapterRequiredForExecution'] is True
-assert ext['engineStrategy'] == 'retain_android_webview'
-assert ext['implementationTarget'] == 'restricted_isolated_content_script_subset'
-assert ext['fullChromeExtensionCompatibility'] is False
-assert ext['geckoViewBundled'] is False
-assert ext['minSdkPreservationTarget'] == 19
-          assert set(ext['plannedImportSources']) == {'local_zip', 'local_crx', 'web_store'}
+          assert ext['engineStrategy'] == 'retain_android_webview'
+          assert ext['implementationTarget'] == 'restricted_isolated_content_script_subset'
+          assert ext['fullChromeExtensionCompatibility'] is False
+          assert ext['geckoViewBundled'] is False
+          assert ext['minSdkPreservationTarget'] == 19
+          assert set(ext['plannedImportSources']) == {'local_zip', 'local_crx'}
+
           sec = ext['security']
           for key in ('executeDuringImport', 'autoGrantPermissions', 'exposeCookiesByDefault',
                       'exposePasswordsByDefault', 'exposeHistoryByDefault'):
-              assert sec[key] is False, f'Unsafe default: {key}'
+              assert sec[key] is False, f'Unsafe extension default: {key}'
           for key in ('rejectPathTraversal', 'rejectSymlinks', 'requireArchiveLimits',
                       'requireAtomicUpdates'):
-              assert sec[key] is True, f'Missing security requirement: {key}'
+              assert sec[key] is True, f'Missing extension security requirement: {key}'
           assert ext['preserveExistingUserscripts'] is True
-          print('PASS: extension runtime is safely gated; import sources are marked planned only')
+
+          fb = cfg['fbStateUtility']
+          assert fb['enabled'] is False
+          assert fb['requireExplicitUserAction'] is True
+          assert fb['requirePerOperationConsent'] is True
+          for key in ('automaticWebViewCookieExtraction', 'backgroundCollection',
+                      'networkUpload', 'cloudSync', 'credentialLogging', 'passwordCollection'):
+              assert fb[key] is False, f'Unsafe FBState default: {key}'
+          assert fb['keepDataInAppPrivateStorage'] is True
+          assert fb['clearTemporaryDataOnExit'] is True
+          assert set(fb['validateCookieNames']) == {'c_user', 'xs'}
+          assert 'web_store' not in ext['plannedImportSources']
+
+          print('PASS: Web Store disabled; local-only FBState safety defaults verified')
           PY
