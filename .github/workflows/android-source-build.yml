@@ -2,7 +2,7 @@ name: OmegA Android Source Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feature/**']
     paths:
       - 'app/**'
       - '*.gradle'
