@@ -29,9 +29,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class MainActivity : Activity() {
-    private val bg = Color.rgb(12, 16, 28)
-    private val panel = Color.rgb(24, 31, 48)
-    private val accent = Color.rgb(110, 140, 255)
+    private val bg = Color.rgb(9, 8, 23)
+    private val panel = Color.rgb(25, 20, 43)
+    private val accent = Color.rgb(168, 85, 247)
     private val ink = Color.rgb(239, 243, 255)
     private lateinit var root: LinearLayout
     private lateinit var address: EditText
@@ -60,6 +60,7 @@ class MainActivity : Activity() {
         }
         prefs = getSharedPreferences("omega_browser", Context.MODE_PRIVATE)
         loadSavedData()
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN or android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         buildShell()
         showHome()
     }
@@ -154,7 +155,9 @@ class MainActivity : Activity() {
         bottom.addView(button("＋") { newTab() }, weight())
         bottom.addView(button("▢") { showTabs() }, weight())
         root.addView(bottom)
+        root.isFocusableInTouchMode = true
         setContentView(root)
+        root.requestFocus()
     }
 
     private fun rounded(color: Int, radiusDp: Int): GradientDrawable = GradientDrawable().apply {
