@@ -633,7 +633,7 @@ class MainActivity : Activity() {
                 val status = if (info == null) "Error: package metadata could not be read" else if (info.compatible) "Partial: top-frame page-context content scripts only" else "Incompatible: ${info.incompatibility}"
                 val detailText = buildString {
                     append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nDescription: ${info?.description?.ifBlank { "Not provided" } ?: "Not provided"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
-                    append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (manifest): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
+                    append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (package): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
                 }
                 val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
                     .setMessage(detailText)
@@ -750,17 +750,39 @@ class MainActivity : Activity() {
             if (name.isBlank() || version.isBlank()) throw IllegalArgumentException("Manifest name/version is missing")
             val id = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').take(48).ifBlank { "extension" }
             val destination = File(base, id)
-            val backup = File(base, "backup-$id-${System.currentTimeMillis()}")
-            if (destination.exists() && !destination.renameTo(backup)) throw IllegalStateException("Could not safely stage existing extension for update")
-            if (!staging.renameTo(destination)) {
-                if (backup.exists()) backup.renameTo(destination)
-                throw IllegalStateException("Could not finalize extension install; previous version was preserved")
+            val existingManifest = File(destination, "manifest.json")
+            val isUpdate = destination.isDirectory && existingManifest.isFile
+            val previousVersion = if (isUpdate) runCatching { org.json.JSONObject(existingManifest.readText()).optString("version") }.getOrDefault("?") else ""
+            val oldPermissions = if (isUpdate) runCatching {
+                val old = org.json.JSONObject(existingManifest.readText())
+                val arr = old.optJSONArray("permissions")
+                (0 until (arr?.length() ?: 0)).map { arr!!.optString(it) }.toSet()
+            }.getOrDefault(emptySet()) else emptySet()
+            val newPermissions = run {
+                val arr = manifest.optJSONArray("permissions")
+                (0 until (arr?.length() ?: 0)).map { arr!!.optString(it) }.toSet()
             }
-            if (backup.exists()) backup.deleteRecursively()
-            prefs.edit().putBoolean(LightweightExtensionRuntime.enabledKey(id), false).apply()
-            AlertDialog.Builder(this).setTitle("Extension installed")
-                .setMessage("$name v$version installed disabled. Open Extensions, select it and tap Enable. Supported content scripts run on matching webpages; Chrome APIs/background workers are not supported.")
-                .setPositiveButton("OK", null).show()
+            val addedPermissions = newPermissions - oldPermissions
+            val confirm = {
+                val backup = File(base, "backup-$id-${System.currentTimeMillis()}")
+                if (destination.exists() && !destination.renameTo(backup)) throw IllegalStateException("Could not safely stage existing extension for update")
+                if (!staging.renameTo(destination)) {
+                    if (backup.exists()) backup.renameTo(destination)
+                    throw IllegalStateException("Could not finalize extension install; previous version was preserved")
+                }
+                if (backup.exists()) backup.deleteRecursively()
+                prefs.edit().putBoolean(LightweightExtensionRuntime.enabledKey(id), false).apply()
+                AlertDialog.Builder(this).setTitle(if (isUpdate) "Extension updated" else "Extension installed")
+                    .setMessage("$name v$version installed disabled. Review permissions and site access before enabling. Chrome APIs/background workers are not supported.")
+                    .setPositiveButton("OK", null).show()
+            }
+            if (isUpdate) {
+                val permissionText = if (addedPermissions.isEmpty()) "No new API permissions detected." else "New requested permissions:\n" + addedPermissions.joinToString("\n")
+                AlertDialog.Builder(this).setTitle("Confirm extension update")
+                    .setMessage("$name: v$previousVersion → v$version\n$permissionText\n\nThe extension will be disabled after update. Continue?")
+                    .setPositiveButton("Update") { _, _ -> confirm() }
+                    .setNegativeButton("Cancel") { _, _ -> staging.deleteRecursively() }.show()
+            } else confirm()
         } catch (e: Exception) {
             staging.deleteRecursively()
             AlertDialog.Builder(this).setTitle("Extension install failed")
