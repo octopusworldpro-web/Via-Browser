@@ -234,10 +234,10 @@ class MainActivity : Activity() {
         address.setText("")
         suppressSuggestions = false
         suggestionPanel.visibility = View.GONE
-        val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(18, 22, 18, 18); setBackgroundColor(bg) }
-        page.addView(TextView(this).apply { text = "Ω"; textSize = 64f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, 88))
-        page.addView(TextView(this).apply { text = "OmegA Browser"; textSize = 25f; setTextColor(ink); gravity = Gravity.CENTER })
-        page.addView(TextView(this).apply { text = "Fast • Private • Lightweight"; textSize = 13f; setTextColor(Color.LTGRAY); gravity = Gravity.CENTER })
+        val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.TOP; setPadding(18, 30, 18, 18); setBackgroundColor(bg) }
+        page.addView(TextView(this).apply { text = "Ω"; textSize = 82f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, 104))
+        page.addView(TextView(this).apply { text = "OmegA Browser"; textSize = 32f; setTextColor(ink); gravity = Gravity.CENTER })
+        page.addView(TextView(this).apply { text = "Fast • Private • Lightweight"; textSize = 16f; setTextColor(Color.LTGRAY); gravity = Gravity.CENTER })
         val search = EditText(this).apply {
             hint = "Search or enter website"; setSingleLine(true); textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
             setPadding(18, 8, 18, 8); background = rounded(panel, 18); imeOptions = EditorInfo.IME_ACTION_GO
@@ -248,7 +248,7 @@ class MainActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { requestSuggestions(s?.toString().orEmpty()) }
             override fun afterTextChanged(s: Editable?) {}
         })
-        val searchParams = LinearLayout.LayoutParams(-1, 54); searchParams.topMargin = 28; page.addView(search, searchParams)
+        val searchParams = LinearLayout.LayoutParams(-1, 60); searchParams.topMargin = 34; page.addView(search, searchParams)
         val grid = GridLayout(this).apply { columnCount = 3; useDefaultMargins = false; alignmentMode = GridLayout.ALIGN_BOUNDS }
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
@@ -260,16 +260,16 @@ class MainActivity : Activity() {
         )
         shortcuts.forEach { item ->
             val tile = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(4, 6, 4, 6)
-                background = rounded(panel, 16); isClickable = true; isFocusable = true
-                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 25f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 32))
-                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 12f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1; includeFontPadding = false }, LinearLayout.LayoutParams(-1, 25))
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(6, 10, 6, 10)
+                background = rounded(Color.argb(42, 168, 85, 247), 20); isClickable = true; isFocusable = true
+                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 32f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 40))
+                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 14f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1; includeFontPadding = false }, LinearLayout.LayoutParams(-1, 25))
                 setOnClickListener { item.third() }
             }
-            val lp = GridLayout.LayoutParams().apply { width = 0; height = 88; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(4, 5, 4, 5) }
+            val lp = GridLayout.LayoutParams().apply { width = 0; height = 112; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
             grid.addView(tile, lp)
         }
-        val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 16; page.addView(grid, gridParams)
+        val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 22; page.addView(grid, gridParams)
         page.addView(TextView(this).apply { text = "Customized by NirZon"; textSize = 11f; setTextColor(Color.GRAY); gravity = Gravity.CENTER; setPadding(0, 22, 0, 0) })
         replaceWebWith(page)
     }
