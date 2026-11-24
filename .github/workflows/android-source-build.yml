@@ -36,6 +36,8 @@ jobs:
           node --test utilities/fbstate/fbstate.test.js
           node --test utilities/device-identity/device-identity.test.js
           node --test utilities/android-integration/feature-controller.test.js
+      - name: Run Android JVM unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
       - name: Build main WebView APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK
