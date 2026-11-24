@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="omega_brand_blue">#19A7F5</color>
+    <color name="omega_brand_coral">#FF5A45</color>
+    <color name="omega_brand_gold">#FFC247</color>
+    <color name="omega_navy">#101827</color>
+    <color name="omega_surface_light">#F7F9FC</color>
+    <color name="omega_surface_dark">#101827</color>
+    <color name="omega_text_light">#172033</color>
+    <color name="omega_text_dark">#F2F5FA</color>
+    <color name="omega_muted_light">#667085</color>
+    <color name="omega_muted_dark">#A7B0C0</color>
+    <color name="omega_border_light">#DCE3EC</color>
+    <color name="omega_border_dark">#29364A</color>
+</resources>
