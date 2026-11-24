@@ -1,0 +1,22 @@
+{
+  "manifest_version": 2,
+  "name": "OmegA Gecko POC Extension",
+  "version": "1.0.0",
+  "description": "Local proof-of-concept content script for GeckoView integration.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "omega-gecko-poc@example.invalid"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://example.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
