@@ -2,6 +2,11 @@ name: OmegA Browser — Step 2 Identity Repack
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk'
+      - '.github/workflows/omega-step2-identity.yml'
+      - 'config/app-identity.json'
 
 permissions:
   contents: read
@@ -104,8 +109,10 @@ jobs:
         run: |
           aapt dump badging work/OmegA-Browser.apk | tee work/badging.txt
           grep -F "package: name='com.octopusworldpro.omega.browser'" work/badging.txt
-          grep -F "application-label:'OmegA Browser'" work/badging.txt || true
+          grep -F "application-label:'OmegA Browser'" work/badging.txt
           grep -F "versionName='7.4.1-omega'" work/badging.txt
+          grep -F "sdkVersion:'19'" work/badging.txt
+          apksigner verify --verbose work/OmegA-Browser.apk
 
       - name: Upload test APK and build evidence
         uses: actions/upload-artifact@v4
