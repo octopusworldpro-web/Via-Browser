@@ -666,7 +666,9 @@ class MainActivity : Activity() {
                                             edit.putStringSet(LightweightExtensionRuntime.selectedSitesKey(extensionId), sites)
                                         }
                                     }
-                                    3 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "all_sites")\n                                    4 -> {\n                                        val dataDir = File(filesDir, "extension-data/${dir.name}")\n                                        dataDir.deleteRecursively()\n                                    }
+                                    3 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "all_sites")
+                                    4 -> {
+                                        val dataDir = File(filesDir, "extension-data/${dir.name}")\n                                        dataDir.deleteRecursively()\n                                    }
                                 }
                                 edit.apply()
                                 if (mode in 0..3 && web.visibility == View.VISIBLE) web.reload()
