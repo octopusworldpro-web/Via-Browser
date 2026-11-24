@@ -124,6 +124,19 @@ jobs:
           print(f"Identity applied: {old_id} -> {new_id}")
           PY
 
+      - name: Inspect existing About, theme and splash implementation
+        run: |
+          echo "=== Manifest application and theme ==="
+          grep -n -E '<application|android:theme|android:name=' work/decoded/AndroidManifest.xml | head -100
+          echo "=== About-related resources ==="
+          grep -RniE 'about|version|Via Browser|About Via' work/decoded/res/values* work/decoded/res/layout* 2>/dev/null | head -160 || true
+          echo "=== Theme resource definitions ==="
+          grep -RniE 'name="(AppTheme|.*Theme|.*Primary|.*Accent|.*Background|.*Splash)' work/decoded/res/values* 2>/dev/null | head -160 || true
+          echo "=== Splash-related resources ==="
+          find work/decoded/res -maxdepth 3 -type f | grep -Ei 'splash|launch|startup' | head -100 || true
+          echo "=== Relevant dex class strings ==="
+          strings work/decoded/classes*.dex 2>/dev/null | grep -iE 'AboutActivity|AboutFragment|about|SplashActivity' | head -100 || true
+
       - name: Generate API 19–25 legacy launcher icons
         run: |
           sudo apt-get update
