@@ -58,7 +58,7 @@ class MainActivity : Activity() {
         top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 48))
         root.addView(top)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; if (Build.VERSION.SDK_INT >= 21) progressTintList = android.content.res.ColorStateList.valueOf(accent); setVisibility(View.GONE)
+            max = 100; if (Build.VERSION.SDK_INT >= 21) progressTintList = android.content.res.ColorStateList.valueOf(accent); visibility = View.GONE
         }
         root.addView(progress, LinearLayout.LayoutParams(-1, 3))
         web = WebView(this).apply {
@@ -71,10 +71,10 @@ class MainActivity : Activity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     if (url != null) { currentUrl = url; address.setText(url) }
-                    progress.setVisibility(View.VISIBLE)
+                    this@MainActivity.progress.visibility = View.VISIBLE
                 }
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    progress.setVisibility(View.GONE)
+                    this@MainActivity.progress.visibility = View.GONE
                     if (url != null && !url.startsWith("about:")) {
                         currentUrl = url
                         if (history.lastOrNull() != url) history.add(url)
@@ -82,7 +82,7 @@ class MainActivity : Activity() {
                 }
             }
             webChromeClient = object : WebChromeClient() {
-                override fun onProgressChanged(view: WebView?, newProgress: Int) { progress.setProgress(newProgress) }
+                override fun onProgressChanged(view: WebView?, newProgress: Int) { this@MainActivity.progress.progress = newProgress }
             }
         }
         root.addView(web, LinearLayout.LayoutParams(-1, 0, 1f))
