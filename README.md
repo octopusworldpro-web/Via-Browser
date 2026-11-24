@@ -35,7 +35,7 @@ OmegA Browser is a separately installable Android browser customization based on
 | 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI PASS; in-app UI/runtime tests blocked by missing Android source project |
 | 3 | Lightweight local extension path (ZIP/CRX only) | Web Store excluded; runtime blocked by missing Android source project |
 | 4 | Local package validation, install/update/uninstall + storage/runtime infrastructure | Not implemented |
-| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | FBState and Device Identity standalone cores implemented + CI pending; Android integration pending |
+| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Parser/profile cores + app-facing controllers implemented and CI-tested; Android UI/WebView wiring pending |
 | 6 | Full integration, security audit, device tests and release APK | Pending |
 
 ### Step 1 evidence
@@ -63,7 +63,7 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - Static reconnaissance found no Chrome/WebExtension runtime indicators in the inspected APK. Userscripts and generic ZIP parsing are not Chrome extension support.
 - A restricted WebView content-script subset is only an implementation target; it is not yet implemented and is not full Chrome extension compatibility.
 - Device Identity profiles are limited to browser-exposed User-Agent, language, locale and time-zone values; hardware identifiers (including IMEI) are explicitly rejected. Android WebView runtime wiring remains pending.
-- C3C FBState Utility is specified but not integrated. Import/export must be explicitly initiated by the user; session tokens are sensitive and must remain local.
+- C3C FBState and Device Identity app-facing controller logic is implemented, but no Android screen, document picker or live WebView adapter is integrated yet. Import/export must be explicitly initiated by the user; session tokens are sensitive and must remain local.
 
 ## Audit records
 
@@ -79,6 +79,7 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - [Step 5 — C3C FBState Utility specification](AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md)
 - [Step 5 — FBState core implementation and tests](AUDIT/STEP-11-FBSTATE-CORE-IMPLEMENTATION.md)
 - [Step 5 — Device Identity Manager core and safety scope](AUDIT/STEP-12-DEVICE-IDENTITY-CORE.md)
+- [Step 5 — App-facing utility controllers](AUDIT/STEP-13-APP-FACING-UTILITY-CONTROLLERS.md)
 
 ## Build artifacts
 
