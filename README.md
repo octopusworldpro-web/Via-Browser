@@ -33,7 +33,7 @@ OmegA Browser is a separately installable Android browser customization based on
 |---|---|---|
 | 1 | Base reverse engineering + OmegA identity & branding | **CI/build complete**; device verification pending |
 | 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI PASS; in-app UI/runtime tests blocked by missing Android source project |
-| 3 | Chrome Extension runtime + extension manager | **Feasibility evaluated; runtime blocked** by missing source project and engine decision |
+| 3 | Chrome Extension runtime + extension manager | **Lightweight WebView path selected; runtime blocked** by missing Android source project |
 | 4 | ZIP/CRX import, install/update/uninstall + storage/background/messaging | Not implemented |
 | 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Not implemented |
 | 6 | Full integration, security audit, device tests and release APK | Pending |
@@ -47,20 +47,20 @@ OmegA Browser is a separately installable Android browser customization based on
 
 Step 1 consolidates existing work; later steps must reuse these results rather than repeat the APK audit, package migration, launcher branding or JADX inventory.
 
-## Branding
+## Lightweight design rules
 
-- Purple-neon / chrome OmegA visual direction.
-- Omega globe, orbit and crown-inspired launcher mark.
-- Adaptive icon for Android 8.0+ and legacy density icons for API 19–25.
-- Keep the browser lightweight: avoid unnecessary runtime libraries, bundled fonts and decorative assets.
+- Keep the existing Via WebView engine; do not bundle a second browser engine.
+- Avoid heavyweight libraries, bundled fonts, analytics, remote code and unnecessary UI frameworks.
+- Keep optional extension packages outside the base APK.
+- Measure per-ABI APK size, install size, startup and memory before accepting dependencies.
 
 ## Current limitations
 
 - Current successful APK is test-signed, not production-signed.
 - Physical device install/launch and side-by-side coexistence have not been verified.
 - Static reconnaissance found no Chrome/WebExtension runtime indicators in the inspected APK. Userscripts and generic ZIP parsing are not Chrome extension support.
-- Extension runtime, manager UI, ZIP/CRX installer and Web Store integration are not implemented.
-- GeckoView is a possible engine-replacement prototype, not an integrated runtime or a guarantee of full Chrome MV3 compatibility.
+- GeckoView was rejected for the lightweight target: it materially increases package size, requires Android 8 / API 26 or later, and does not support Chrome MV3 background service workers on Firefox Android.
+- A restricted WebExtension-compatible content-script subset is only an implementation target; it is not yet implemented and is not full Chrome extension compatibility.
 - Device Identity scope is limited to browser-exposed values; hardware IMEI modification is not part of this project.
 - C3C FBState Utility integration is pending; any cookie/AppState export must be user-initiated and permission-gated.
 
@@ -70,7 +70,8 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - [Step 2 — App identity contract](AUDIT/STEP-02-APP-IDENTITY.md)
 - [Step 2 — Browser core compatibility baseline](AUDIT/STEP-04-BROWSER-CORE-COMPATIBILITY.md)
 - [Step 3 — Extension runtime implementation gate](AUDIT/STEP-03-EXTENSION-RUNTIME.md)
-- [Step 3 — Extension engine feasibility decision](AUDIT/STEP-08-ENGINE-DECISION.md)
+- [Step 3 — Engine feasibility decision](AUDIT/STEP-08-ENGINE-DECISION.md)
+- [Step 3 — Lightweight engine decision](AUDIT/STEP-09-LIGHTWEIGHT-ENGINE-DECISION.md)
 - [Step 3 — Extension manager design](AUDIT/STEP-05-EXTENSION-MANAGER.md)
 - [Step 3 — Runtime reconnaissance](AUDIT/STEP-06-RUNTIME-RECONNAISSANCE.md)
 - [Step 3 — Runtime implementation feasibility/blocker](AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md)
