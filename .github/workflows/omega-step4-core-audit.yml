@@ -104,17 +104,17 @@ jobs:
       - name: Verify Android compatibility floor and original app namespace
         run: |
           python3 - <<'PY'
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-          p = Path("work/base/AndroidManifest.xml")
-          root = ET.parse(p).getroot()
-          android = "{http://schemas.android.com/apk/res/android}"
-          sdk = root.find("uses-sdk")
-          assert sdk is not None, "uses-sdk element missing"
-          minimum = sdk.attrib.get(android + "minSdkVersion")
-          assert minimum == "19", f"Expected minSdk 19, got {minimum}"
-          assert root.attrib.get("package") == "mark.via.gp", "Unexpected base package"
-          print("PASS: base package mark.via.gp; minSdkVersion 19")
+          import re
+          import subprocess
+          apk = "Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk"
+          output = subprocess.check_output(["aapt", "dump", "badging", apk], text=True)
+          package = re.search(r"^package: name='([^']+)'", output, re.MULTILINE)
+          minimum = re.search(r"^sdkVersion:'([^']+)'", output, re.MULTILINE)
+          assert package, "aapt could not read package name from compiled APK manifest"
+          assert minimum, "aapt could not read minSdkVersion from compiled APK manifest"
+          assert package.group(1) == "mark.via.gp", f"Unexpected base package: {package.group(1)}"
+          assert minimum.group(1) == "19", f"Expected minSdk 19, got {minimum.group(1)}"
+          print(f"PASS: base package {package.group(1)}; minSdkVersion {minimum.group(1)}")
           PY
 
       - name: Upload static audit evidence
