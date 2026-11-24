@@ -113,10 +113,10 @@ class MainActivity : Activity() {
                 if (action == EditorInfo.IME_ACTION_GO || action == EditorInfo.IME_ACTION_DONE) { loadAddress(text.toString()); true } else false
             }
         }
-        top.addView(address, LinearLayout.LayoutParams(0, 70, 1f).apply {
+        top.addView(address, LinearLayout.LayoutParams(0, 70 + (20 * resources.displayMetrics.density).toInt(), 1f).apply {
             marginEnd = (10 * resources.displayMetrics.density).toInt()
         })
-        top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(38, 70))
+        top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(38, 70 + (20 * resources.displayMetrics.density).toInt()))
         root.addView(top)
         suggestionPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 4, 12, 8); setBackgroundColor(panel); visibility = View.GONE }
         root.addView(suggestionPanel, LinearLayout.LayoutParams(-1, -2))
@@ -324,7 +324,7 @@ class MainActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { requestSuggestions(s?.toString().orEmpty()) }
             override fun afterTextChanged(s: Editable?) {}
         })
-        val searchParams = LinearLayout.LayoutParams(-1, 70); searchParams.topMargin = 34; page.addView(search, searchParams)
+        val searchParams = LinearLayout.LayoutParams(-1, 70 + (20 * resources.displayMetrics.density).toInt()); searchParams.topMargin = 34; page.addView(search, searchParams)
         val grid = GridLayout(this).apply { columnCount = 3; useDefaultMargins = false; alignmentMode = GridLayout.ALIGN_BOUNDS }
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
