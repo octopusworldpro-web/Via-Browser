@@ -134,10 +134,12 @@ class MainActivity : Activity() {
         )
         shortcuts.forEach { item ->
             val tile = TextView(this).apply {
-                text = item.first; textSize = 15f; gravity = Gravity.CENTER; setTextColor(ink)
-                setBackgroundColor(panel); setPadding(8, 18, 8, 18); setOnClickListener { item.second() }
+                text = item.first; textSize = 14f; gravity = Gravity.CENTER; setTextColor(ink)
+                includeFontPadding = false
+                minHeight = 68
+                setBackgroundColor(panel); setPadding(8, 10, 8, 10); setOnClickListener { item.second() }
             }
-            val lp = GridLayout.LayoutParams().apply { width = 0; height = 58; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 6, 5, 6) }
+            val lp = GridLayout.LayoutParams().apply { width = 0; height = 72; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 6, 5, 6) }
             grid.addView(tile, lp)
         }
         val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 22; page.addView(grid, gridParams)
