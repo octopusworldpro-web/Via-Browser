@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.os.Build
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
 import android.net.Uri
 import android.view.Gravity
 import android.view.View
@@ -27,6 +30,31 @@ import android.graphics.drawable.GradientDrawable
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
+
+private class OmegaMarkView(context: Context, private val markColor: Int) : View(context) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = markColor
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        strokeWidth = 7f * resources.displayMetrics.density
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val path = Path().apply {
+            moveTo(w * 0.16f, h * 0.78f)
+            cubicTo(w * 0.10f, h * 0.38f, w * 0.27f, h * 0.10f, w * 0.50f, h * 0.10f)
+            cubicTo(w * 0.73f, h * 0.10f, w * 0.90f, h * 0.38f, w * 0.84f, h * 0.78f)
+            lineTo(w * 0.84f, h * 0.90f)
+            moveTo(w * 0.16f, h * 0.78f)
+            lineTo(w * 0.16f, h * 0.90f)
+        }
+        canvas.drawPath(path, paint)
+    }
+}
 
 class MainActivity : Activity() {
     private val bg = Color.rgb(9, 8, 23)
@@ -235,9 +263,15 @@ class MainActivity : Activity() {
         suppressSuggestions = false
         suggestionPanel.visibility = View.GONE
         val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.TOP; setPadding(18, 30, 18, 18); setBackgroundColor(bg) }
-        page.addView(TextView(this).apply { text = "Ω"; textSize = 82f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, 104))
-        page.addView(TextView(this).apply { text = "OmegA Browser"; textSize = 32f; setTextColor(ink); gravity = Gravity.CENTER })
-        page.addView(TextView(this).apply { text = "Fast • Private • Lightweight"; textSize = 16f; setTextColor(Color.LTGRAY); gravity = Gravity.CENTER })
+        page.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(76, 68).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        page.addView(TextView(this).apply {
+            text = "OmegA Browser"; textSize = 32f; setTextColor(ink); gravity = Gravity.CENTER
+            includeFontPadding = true
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 4 })
+        page.addView(TextView(this).apply {
+            text = "Fast • Private • Lightweight"; textSize = 16f; setTextColor(Color.LTGRAY); gravity = Gravity.CENTER
+            includeFontPadding = true
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 2 })
         val search = EditText(this).apply {
             hint = "Search or enter website"; setSingleLine(true); textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
             setPadding(18, 8, 18, 8); background = rounded(panel, 18); imeOptions = EditorInfo.IME_ACTION_GO
@@ -260,13 +294,13 @@ class MainActivity : Activity() {
         )
         shortcuts.forEach { item ->
             val tile = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(6, 10, 6, 10)
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(6, 8, 6, 8)
                 background = rounded(Color.argb(42, 168, 85, 247), 20); isClickable = true; isFocusable = true
-                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 32f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 40))
-                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 14f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1; includeFontPadding = false }, LinearLayout.LayoutParams(-1, 25))
+                addView(TextView(this@MainActivity).apply { text = item.first; textSize = 30f; gravity = Gravity.CENTER; setTextColor(accent) }, LinearLayout.LayoutParams(-1, 42))
+                addView(TextView(this@MainActivity).apply { text = item.second; textSize = 14f; gravity = Gravity.CENTER; setTextColor(ink); maxLines = 1; includeFontPadding = true }, LinearLayout.LayoutParams(-1, 34))
                 setOnClickListener { item.third() }
             }
-            val lp = GridLayout.LayoutParams().apply { width = 0; height = 112; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
+            val lp = GridLayout.LayoutParams().apply { width = 0; height = 120; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
             grid.addView(tile, lp)
         }
         val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 22; page.addView(grid, gridParams)
