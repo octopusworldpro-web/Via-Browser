@@ -252,6 +252,8 @@ class MainActivity : Activity() {
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
             Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "C3C FBState", { showFbState() }),
+            Triple("f", "Facebook", { loadAddress("https://www.facebook.com/") }),
+            Triple("◎", "Instagram", { loadAddress("https://www.instagram.com/") }),
             Triple("⌁", "Device Identity", { showIdentity() }), Triple("⚙", "Settings", { showSettings() })
         )
         shortcuts.forEach { item ->
