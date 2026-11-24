@@ -45,13 +45,13 @@ private class OmegaMarkView(context: Context, private val markColor: Int) : View
         val w = width.toFloat()
         val h = height.toFloat()
         val path = Path().apply {
-            moveTo(w * 0.16f, h * 0.88f)
-            lineTo(w * 0.31f, h * 0.88f)
-            lineTo(w * 0.31f, h * 0.70f)
-            cubicTo(w * 0.31f, h * 0.34f, w * 0.39f, h * 0.12f, w * 0.50f, h * 0.12f)
-            cubicTo(w * 0.61f, h * 0.12f, w * 0.69f, h * 0.34f, w * 0.69f, h * 0.70f)
-            lineTo(w * 0.69f, h * 0.88f)
-            lineTo(w * 0.84f, h * 0.88f)
+            moveTo(w * 0.08f, h * 0.82f)
+            lineTo(w * 0.27f, h * 0.82f)
+            lineTo(w * 0.27f, h * 0.63f)
+            cubicTo(w * 0.27f, h * 0.27f, w * 0.37f, h * 0.10f, w * 0.50f, h * 0.10f)
+            cubicTo(w * 0.63f, h * 0.10f, w * 0.73f, h * 0.27f, w * 0.73f, h * 0.63f)
+            lineTo(w * 0.73f, h * 0.82f)
+            lineTo(w * 0.92f, h * 0.82f)
         }
         canvas.drawPath(path, paint)
     }
@@ -100,15 +100,7 @@ class MainActivity : Activity() {
     private fun buildShell() {
         root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 6, 14, 6); setBackgroundColor(bg) }
-        top.addView(TextView(this).apply {
-            text = "Ω"
-            textSize = 34f
-            typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setTextColor(accent)
-            includeFontPadding = true
-            setSingleLine(true)
-        }, LinearLayout.LayoutParams(48, 70).apply {
+        top.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(48, 54).apply {
             gravity = Gravity.CENTER
             marginEnd = (8 * resources.displayMetrics.density).toInt()
         })
@@ -277,16 +269,9 @@ class MainActivity : Activity() {
         suppressSuggestions = false
         suggestionPanel.visibility = View.GONE
         val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(18, 20, 18, 20); setBackgroundColor(bg) }
-        page.addView(TextView(this).apply {
-            text = "Ω"
-            textSize = 60f
-            typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
-            gravity = Gravity.CENTER
-            setTextColor(accent)
-            includeFontPadding = true
-            setSingleLine(true)
+        page.addView(OmegaMarkView(this, accent).apply {
             translationY = (-8 * resources.displayMetrics.density)
-        }, LinearLayout.LayoutParams(104, 100).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        }, LinearLayout.LayoutParams(104, 78).apply { gravity = Gravity.CENTER_HORIZONTAL })
         page.addView(TextView(this).apply {
             text = "OmegA Browser"; textSize = 32f; setTextColor(ink); gravity = Gravity.CENTER
             includeFontPadding = true
