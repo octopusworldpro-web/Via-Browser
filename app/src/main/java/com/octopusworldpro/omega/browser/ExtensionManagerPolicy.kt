@@ -43,7 +43,7 @@ internal object ExtensionManagerPolicy {
         val contentScripts = manifest.optJSONArray("content_scripts")
         val hasScripts = contentScripts != null && contentScripts.length() > 0
         val background = manifest.has("background")
-        val unsupportedApi = permissions.any { it.removePrefix("host:") !in setOf("storage", "activeTab", "tabs") && !it.startsWith("host:") }
+        val unsupportedApi = permissions.any { !it.startsWith("host:") }
         val incompatible = !hasScripts || background || unsupportedApi
         val reason = when {
             !hasScripts -> "No supported content_scripts declared"
