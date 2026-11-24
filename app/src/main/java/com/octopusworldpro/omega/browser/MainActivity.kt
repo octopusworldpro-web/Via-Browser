@@ -135,6 +135,15 @@ class MainActivity : Activity() {
             settings.loadsImagesAutomatically = true
             settings.javaScriptCanOpenWindowsAutomatically = false
             settings.setSupportMultipleWindows(false)
+            // Keep web content isolated from local files and block mixed-content downgrades.
+            settings.allowFileAccess = false
+            settings.allowContentAccess = true
+            if (Build.VERSION.SDK_INT >= 21) {
+                settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            }
+            if (Build.VERSION.SDK_INT >= 26) {
+                settings.safeBrowsingEnabled = true
+            }
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     if (url != null) { currentUrl = url; suppressSuggestions = true; address.setText(url); suppressSuggestions = false }
@@ -149,8 +158,12 @@ class MainActivity : Activity() {
                 }
             }
             if (identityUserAgent.isNotEmpty()) settings.userAgentString = identityUserAgent
-            settings.allowFileAccess = true
+            settings.allowFileAccess = false
             settings.allowContentAccess = true
+            if (Build.VERSION.SDK_INT >= 16) {
+                settings.allowFileAccessFromFileURLs = false
+                settings.allowUniversalAccessFromFileURLs = false
+            }
             settings.javaScriptCanOpenWindowsAutomatically = false
             setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
                 try {
