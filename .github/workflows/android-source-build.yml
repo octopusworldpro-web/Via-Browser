@@ -2,9 +2,10 @@ name: OmegA Android Source Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feature/**']
     paths:
       - 'app/**'
+      - 'scripts/**'
       - '*.gradle'
       - 'gradle.properties'
       - '.github/workflows/android-source-build.yml'
@@ -30,7 +31,14 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
-      - name: Build debug APK
+      - name: Run utility and controller tests
+        run: |
+          node --test utilities/fbstate/fbstate.test.js
+          node --test utilities/device-identity/device-identity.test.js
+          node --test utilities/android-integration/feature-controller.test.js
+      - name: Run Android JVM unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+      - name: Build main WebView APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Verify APK
         run: |

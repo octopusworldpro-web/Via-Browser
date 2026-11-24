@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OmegA Browser</string>
+    <string name="omega_about_title">About OmegA Browser</string>
+    <string name="omega_customized_by">Customized by NirZon</string>
+    <string name="omega_extension_manager">Extensions</string>
+    <string name="omega_identity_manager">Device Identity</string>
+</resources>

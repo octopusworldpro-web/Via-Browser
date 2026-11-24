@@ -1,4 +1,4 @@
-# C3C FBState Utility — Core Module
+# FBState Utility — Core Module
 
 **Implementation status: standalone parser/validator/exporter implemented; in-app UI and Android integration remain separate.**
 
@@ -33,3 +33,12 @@ node --test utilities/fbstate/fbstate.test.js
 ```
 
 The in-app screen, Android document-picker integration and permission prompts still need to call this module from the app layer.
+
+
+## Uploaded extension review — c3c-fbstate-1.1.zip
+
+The supplied archive is a Manifest V2 Chrome extension. Its popup uses the `cookies` permission and calls `chrome.cookies.getAll`, `chrome.cookies.remove`, and `chrome.cookies.set` to export the active Facebook cookie jar or replace cookies during import. Its encrypted mode encrypts/decrypts the same cookie data; encryption does not change the underlying session-credential behavior.
+
+The Android app is a native WebView browser, not a Chrome extension host. The extension's `chrome.*` APIs and Manifest V2 popup cannot be installed as a normal Android extension in this app. The active-cookie export and cookie injection behavior are intentionally not ported.
+
+The app-facing adaptation retains the FBState Utility name and the native, user-selected-file workflow already present in the app. No active WebView cookie-store extraction or cookie injection is added. This is a compatibility/safety decision, not a claim that the original extension has been fully ported.

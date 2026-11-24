@@ -1,6 +1,6 @@
 # Step 05 — OmegA Extension Manager
 
-**Status:** Manager design and integration contract complete; APK implementation is blocked by the missing Via source/build project  
+**Status:** Lightweight WebView manager implementation added; Android CI and physical-device acceptance are pending. Full WebExtension manager/runtime remains out of scope  
 **Product:** OmegA Browser  
 **Planned integration window:** Steps 05–07  
 **Base:** Via Browser 7.4.1 / Android WebView
@@ -172,7 +172,7 @@ These are implementation acceptance criteria, not claimed runtime test results:
 - [ ] Browser startup time and memory remain within the baseline budget.
 - [ ] No extension manager action exposes cookies/passwords/history by default.
 
-## 10. Step completion statement
+## 10. Current lightweight implementation\n\nThe current OmegA source now has a native extension manager for local ZIP packages. It lists installed packages, inspects manifest metadata without executing package code, displays name/version/description/author/source, requested API permissions and host patterns, package size and SHA-256 digest, and clearly labels the limited page-context runtime. Packages that request unsupported Chrome APIs, declare background execution, or have no content scripts are marked incompatible and cannot be enabled.\n\nThe manager exposes enable/disable, remove, site-access choices (blocked by default, one-time current origin, selected current origin, or all matching HTTP/HTTPS sites), and clear extension-owned data. Imports remain disabled by default. Replacing an existing package requires confirmation, shows newly requested API permissions, and disables the package after update. Failed finalization restores the prior package. Metadata inspection and compatibility classification have JVM unit tests.\n\n**Known limits:** source is local ZIP only; CRX and Chrome Web Store are unavailable. This is not a complete persistent metadata database or full permission broker. Site access is origin-level in the current UI; host-pattern grants are not yet individually editable. Extension storage API is not exposed to scripts. The content-script runner remains page-context-only, without Chrome APIs, background workers, isolated worlds, CSS injection, or full MV3 support.\n\n## 11. Step completion statement
 
 **Completed here:** manager screens, responsibilities, lifecycle, persistent data contract, permission/security rules, runtime adapter boundary, performance constraints and acceptance criteria are defined and committed.
 

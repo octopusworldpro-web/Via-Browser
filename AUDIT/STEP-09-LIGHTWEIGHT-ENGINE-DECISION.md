@@ -1,61 +1,60 @@
-# Step 3 — Lightweight Extension Engine Decision
+# Step 07 — Runtime Implementation and APK Integration
 
-**Decision date:** 2026-11-24  
-**Priorities:** preserve Via Browser, keep APK small, retain API 19 where feasible.
+**Status: BLOCKED — no buildable Android source project or compatible WebExtension engine is available in this repository.**  
+**Decision date:** 2026-11-24
 
-## Decision
+## Step 06 evidence used
 
-Do not bundle GeckoView into the main OmegA APK. It is a major browser-core replacement, not a small add-on. A recent ARM64 package measurement found an approximately 90 MB GeckoView AAR; Mozilla's GeckoView minimum-system-requirements page lists Android 8.0 / API 26. These conflict with OmegA's current minSdk 19 and the lightweight requirement.
+The successful [runtime reconnaissance workflow](https://github.com/octopusworldpro-web/Via-Browser/actions/runs/45332809697) decompiled 4,285 Java source files. Its report found:
 
-GeckoView supports embedded WebExtensions, but Firefox for Android does not support MV3 background service workers. It would add substantial size and still not provide full Chrome extension compatibility.
+- 9 files matching WebView construction/configuration.
+- 12 files matching JavaScript bridge patterns.
+- 10 files matching the existing userscript subsystem.
+- 6 files matching generic extension package/import patterns.
+- **0 files matching Chrome/WebExtension runtime indicators.**
 
-## Why WebView is retained
+This is static evidence, not proof of runtime behavior. Generic ZIP/manifest handling and WebView service-worker APIs do not provide Chrome extension execution.
 
-The current Via browser uses Android WebView. WebView shares Chromium rendering code, but is a content embedder and does not include Chrome's browser-specific extension host. A Chrome-like extension runtime cannot be enabled by a WebView setting.
+## Implementation decision
 
-The repository lacks the buildable Via Android Studio/Gradle source project. The current resource-repackaging workflow cannot safely add isolated execution contexts or native manager screens.
+A real extension manager is not useful unless a compatible runtime can execute the extension. Implementing only a manager UI or ZIP/CRX importer would create a misleading feature: packages could appear installed but could not run. Therefore this step does not label imported packages as installed/runnable and does not claim Chrome Web Store compatibility.
 
-## Lightweight path selected for investigation
+The repository currently contains a compiled Via APK and audit/build workflows, not the original Android source/Gradle project. The existing APK build workflow can repackage resources and identity, but it does not provide a safe, maintainable path to add a complete extension engine and application UI. Blind DEX patching is rejected because the exact app-specific call sites and runtime behavior have not been verified.
 
-Retain WebView and investigate a deliberately limited, opt-in extension-compatible subset once buildable source is available:
+## Required implementation components
 
-- Local-only package staging and strict manifest validation.
-- Content scripts only, with isolated execution contexts and explicit match patterns.
-- A small allowlisted API surface; unsupported Chrome APIs must be rejected and reported.
-- No general background service worker, arbitrary native bridge, broad cookie/password/history access or Web Store claim.
-- Per-extension storage with quotas and atomic lifecycle.
-- Least-privilege host permission prompts.
-- Existing userscripts remain separate and unchanged.
+A future implementation must provide and test all of the following before Chrome extension support is enabled:
 
-This is a **limited WebExtension-compatible runtime**, not full Chrome extension support. If safe isolated execution cannot be implemented with the actual source and supported platform APIs, do not ship extension execution.
+1. Manifest V3 parsing and package validation with traversal, archive-size and decompression-bomb protections.
+2. Isolated content-script execution and deterministic injection at supported navigation phases.
+3. Background service-worker/event lifecycle and extension messaging.
+4. Explicitly scoped `chrome.*` API compatibility, with unsupported APIs reported accurately.
+5. Permission broker for API and host permissions; no ambient access to cookies, passwords, history or private tabs.
+6. Per-extension persistent storage and atomic install/update/rollback/uninstall.
+7. Local ZIP/CRX import and a truthful Web Store handoff policy.
+8. Manager UI wired to the actual runtime adapter.
+9. Regression tests for existing Via browsing, userscripts, downloads, cookies, bookmarks and history.
+10. Install/launch/functional tests on an Android emulator and physical device.
 
-## APK size policy
+## Current build capability
 
-1. Do not bundle a second browser engine or duplicate native browser libraries.
-2. No bundled fonts, analytics, remote code, heavyweight UI framework or background service by default.
-3. Keep extension packages user-installed and outside the base APK; enforce archive/file quotas.
-4. Use platform/WebView capabilities where safe; do not add a large JS engine solely to imitate Chrome.
-5. Record base and per-ABI APK size, install size, cold start and memory before/after each dependency.
-6. Reject heavyweight dependencies without a measured feature benefit.
+| Capability | Verified state |
+|---|---|
+| Separate OmegA application identity | CI build passed |
+| OmegA launcher branding | CI build passed |
+| Existing Via browser code retained in repackaged APK | Static build/repack only |
+| Runtime decompilation inventory | CI passed |
+| Extension manager design | Documented only |
+| Chrome extension runtime | Not implemented |
+| ZIP/CRX importer integrated into APK | Not implemented |
+| Chrome Web Store install flow | Not implemented |
+| Device install/launch regression test | Not run |
+| Production signing | Not configured; current artifact uses temporary test key |
 
-## Required source and acceptance gates
+## Completion gate
 
-The original buildable Via Android source/Gradle project is still required. Once available:
-- Create a minimal prototype on a separate branch without changing the current APK.
-- Measure universal and per-ABI APK sizes, install size, cold start and idle/active memory.
-- Test isolation, origin matching, permissions, storage quotas, navigation lifecycle and uninstall cleanup.
-- Verify Via browsing, userscripts, cookies, bookmarks, history, downloads and private mode.
-- Keep the runtime disabled if any security or regression gate fails.
+Step 07 can be marked complete only when a buildable implementation exists, CI produces the updated APK, and device/emulator tests prove the manager and supported extension APIs work. Until then, the honest project status is **blocked**, not complete.
 
-## References
+## What unblocks this step
 
-- GeckoView WebExtensions: https://firefox-source-docs.mozilla.org/mobile/android/geckoview/consumer/web-extensions.html
-- GeckoView platform minimum requirements: https://wiki.mozilla.org/Mobile/GeckoView
-- Firefox Android MV3 limitations: https://extensionworkshop.com/documentation/develop/developing-extensions-for-firefox-for-android/
-- Firefox background service-worker support: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background
-- Chromium WebView architecture: https://chromium.googlesource.com/chromium/src/+/main/android_webview/docs/architecture.md
-- Android WebView overview: https://developer.chrome.google.cn/docs/webview
-
-## Status
-
-**Lightweight engine choice decided: retain WebView; do not bundle GeckoView.** Step 3 feasibility/architecture is updated, but the extension runtime itself remains unimplemented and disabled until the buildable Android source project is available.
+The viable next input is a buildable Via Android source/Gradle project (or an independently licensed WebExtension engine plus a maintainable integration project). Without that, this repository can continue static APK/resource repackaging, but cannot responsibly deliver a real Chrome-compatible extension runtime.
