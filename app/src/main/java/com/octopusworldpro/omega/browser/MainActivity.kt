@@ -483,7 +483,9 @@ class MainActivity : Activity() {
             else arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file", "Export imported data")
         AlertDialog.Builder(this).setTitle("C3C FBState Utility")
             .setItems(options) { _, which ->
-                if (which == 3) {
+                if (which == 1) {
+                    showCookieHeaderImport()
+                } else if (which == 3) {
                     AlertDialog.Builder(this).setTitle("Export sensitive session data?")
                         .setMessage("The backup contains account session cookies. Store it only in a trusted private location.")
                         .setPositiveButton("Continue") { _, _ ->
@@ -505,6 +507,59 @@ class MainActivity : Activity() {
                 }
             }.setNegativeButton("Close", null).show()
     }
+    private fun showCookieHeaderImport() {
+        val editor = EditText(this).apply {
+            hint = "c_user=...; xs=...; other_cookie=..."
+            setTextColor(ink)
+            setHintTextColor(Color.GRAY)
+            textSize = 14f
+            minLines = 3
+            maxLines = 6
+            setPadding(18, 12, 18, 12)
+        }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(22, 4, 22, 0)
+            addView(TextView(this@MainActivity).apply {
+                text = "Paste a Cookie header you obtained yourself. Values stay in memory and are hidden in the preview."
+                setTextColor(ink)
+                textSize = 13f
+            })
+            addView(editor, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 12 })
+        }
+        AlertDialog.Builder(this).setTitle("Import Cookie Header")
+            .setView(container)
+            .setPositiveButton("Validate") { _, _ ->
+                try {
+                    val raw = editor.text.toString().trim()
+                    if (raw.isBlank() || raw.length > 1024 * 1024 || raw.contains('\n') || raw.contains('\r')) {
+                        throw IllegalArgumentException("Cookie header is empty or too large")
+                    }
+                    val pairs = raw.split(";").map { part ->
+                        val index = part.indexOf('=')
+                        if (index <= 0) throw IllegalArgumentException("Invalid cookie pair")
+                        val name = part.substring(0, index).trim()
+                        val value = part.substring(index + 1).trim()
+                        if (name.isBlank() || value.isBlank()) throw IllegalArgumentException("Cookie name/value is empty")
+                        name to value
+                    }
+                    val names = pairs.map { it.first }.distinct()
+                    if (!names.contains("c_user") || !names.contains("xs")) {
+                        throw IllegalArgumentException("Required c_user and xs cookies are missing")
+                    }
+                    fbStateContent = raw
+                    val preview = names.joinToString("\n") { "$it = ••••••••" }
+                    AlertDialog.Builder(this).setTitle("FBState validated")
+                        .setMessage("Cookie names: \${names.size}\nRequired c_user + xs: present\n\n$preview")
+                        .setPositiveButton("OK", null).show()
+                } catch (e: Exception) {
+                    AlertDialog.Builder(this).setTitle("Cookie Header invalid")
+                        .setMessage(e.message ?: "Could not validate Cookie header")
+                        .setPositiveButton("OK", null).show()
+                }
+            }.setNegativeButton("Cancel", null).show()
+    }
+
     @Deprecated("Legacy activity result retained for API 19 compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
