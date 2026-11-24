@@ -19,7 +19,7 @@ test('rejects hardware identifiers and fingerprint fields', () => {
 
 test('rejects unknown properties and control characters', () => {
   assert.throws(() => validateProfile({ canvasFingerprint: 'x' }), /Unsupported/);
-  assert.throws(() => validateProfile({ userAgent: 'x\\nInjected' }), /printable/);
+  assert.throws(() => validateProfile({ userAgent: 'x\nInjected' }), /printable/);
 });
 
 test('validates locale, language and timezone', () => {
