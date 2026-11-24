@@ -8,7 +8,7 @@ const FORBIDDEN_FIELDS = new Set([
 
 function validateText(value, field, max) {
   if (typeof value !== 'string' || value.length === 0 || value.length > max ||
-      /[\\u0000-\\u001f\\u007f]/.test(value)) {
+      [...value].some((char) => { const code = char.charCodeAt(0); return code <= 31 || code === 127; })) {
     throw new TypeError(field + ' must be a non-empty printable string (max ' + max + ')');
   }
   return value;
