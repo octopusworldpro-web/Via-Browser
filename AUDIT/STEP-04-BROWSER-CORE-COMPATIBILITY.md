@@ -1,6 +1,6 @@
 # Step 04 — Browser Core Compatibility Baseline
 
-**Status:** Static compatibility baseline complete; CI preservation and OmegA UI-token guard added. Runtime regression and in-app UI integration remain blocked by missing Android source/build project.  
+**Status:** Core compatibility implementation baseline complete for the current lightweight WebView app; JVM regression tests are now part of Android CI. Physical-device regression and unimplemented Via parity features remain explicitly outstanding.  
 **Base artifact:** Via Browser 7.4.1 APK  
 **Target identity:** `com.octopusworldpro.omega.browser`  
 **Compatibility floor:** Android API 19 (Android 4.4), subject to feature-specific runtime support
@@ -68,7 +68,7 @@ Therefore:
 - Treat external download-manager intents and file chooser results as untrusted input; validate URI schemes and granted URI permissions.
 - Do not introduce a new network service, analytics SDK, font package or always-running service as part of the core compatibility layer.
 
-## 6. Required regression checks before APK release
+## 6. Current OmegA implementation baseline\n\nThe current source project now provides a native WebView browser shell with HTTP/HTTPS navigation, back/forward controls, URL/search handling, JavaScript and DOM storage settings, file chooser, DownloadManager handoff, bookmarks/history storage, tab UI, Safe Browsing where supported, mixed-content blocking, disabled local-file access, and WebView cookie persistence flushes on page completion and activity pause. External `mailto:`, `tel:`, `sms:` and `geo:` links are handed to Android; unsupported and dangerous schemes are blocked.\n\nA pure JVM navigation policy and tests cover HTTP/HTTPS allow rules and external-scheme handling. Android CI runs `:app:testDebugUnitTest` before building the APK.\n\n**Known feature gaps (not claimed as Via parity):** isolated incognito profile/session storage, reader mode/read-aloud, proxy controls, custom-tab provider integration, Via GM_* userscript manager, independent WebView tab sessions, and a complete per-provider service-worker/web-message feature adapter. These require separate implementation and device regression. The present lightweight app must not be described as a full Via 7.4.1 feature clone.\n\n## 7. Required regression checks before APK release
 
 These checks are acceptance criteria for the later rebuild/device-test stage; they are **not marked as executed** by this static audit.
 
@@ -85,7 +85,7 @@ These checks are acceptance criteria for the later rebuild/device-test stage; th
 - [ ] Existing userscript install, execution, menu command and GM storage behavior.
 - [ ] Side-by-side install with original Via; verify OmegA does not overwrite it.
 
-## 7. Reproducible CI preservation audit
+## 8. Reproducible CI preservation audit
 
 Added `.github/workflows/omega-step4-core-audit.yml`. It can be run manually from GitHub Actions and runs when the base APK, audit contract, workflow, or OmegA theme-token resources change. The workflow:
 - Downloads the previously successful identity-repack APK artifact (run `45331285994`) and verifies its ZIP integrity and required APK entries.
@@ -96,7 +96,7 @@ Added `.github/workflows/omega-step4-core-audit.yml`. It can be run manually fro
 
 The original base APK is not checked into the repository; the workflow therefore reuses the successful OmegA APK artifact rather than expecting a nonexistent local APK. This is a static regression guard, not an emulator test. Marker checks establish presence only, not successful feature execution. The workflow has been committed but has not yet been dispatched or observed passing.
 
-## 8. Scope and completion statement
+## 9. Scope and completion statement
 
 **Completed in roadmap Step 2 (audit/guard scope):** static core-feature inventory, Android/WebView compatibility boundaries, feature-preservation contract, extension/userscript separation, security guardrails, concrete runtime regression acceptance checklist, and a reproducible CI guard for the verified OmegA APK artifact, core markers, API floor, and OmegA theme-token resources.
 
