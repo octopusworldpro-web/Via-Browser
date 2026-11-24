@@ -4,13 +4,10 @@ const assert = require("node:assert/strict");
 
 const root = path.resolve(__dirname, "..");
 const extensionDir = path.join(root, "gecko-poc/src/main/assets/omega_poc_extension");
-const manifestPath = path.join(extensionDir, "manifest.json");
-const scriptPath = path.join(extensionDir, "content.js");
+const manifest = JSON.parse(fs.readFileSync(path.join(extensionDir, "manifest.json"), "utf8"));
+const contentScript = fs.readFileSync(path.join(extensionDir, "content.js"), "utf8");
 
-const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-const contentScript = fs.readFileSync(scriptPath, "utf8");
-
-assert.equal(manifest.manifest_version, 2, "POC manifest must use the supported MV2 test format");
+assert.equal(manifest.manifest_version, 2, "POC manifest must use MV2");
 assert.equal(manifest.name, "OmegA Gecko POC Extension");
 assert.equal(manifest.version, "1.0.0");
 assert.equal(
@@ -19,21 +16,54 @@ assert.equal(
   "manifest ID must match ensureBuiltIn()"
 );
 
-const scripts = manifest.content_scripts;
-assert.ok(Array.isArray(scripts) && scripts.length > 0, "at least one content script is required");
+const contentScripts = manifest.content_scripts;
+assert.ok(Array.isArray(contentScripts) && contentScripts.length > 0, "content script entry is required");
 assert.ok(
-  scripts.some(entry =>
+  contentScripts.some(entry =>
     Array.isArray(entry.matches) &&
-    entry.matches.includes("https://example.com/*") &&
+    entry.matches.length === 1 &&
+    entry.matches[0] === "https://example.com/*" &&
     Array.isArray(entry.js) &&
-    entry.js.includes("content.js") &&
+    entry.js.length === 1 &&
+    entry.js[0] === "content.js" &&
     entry.run_at === "document_idle"
   ),
-  "POC must target example.com and load content.js at document_idle"
+  "POC must only target example.com and load content.js at document_idle"
 );
+
+const declaredPermissions = [
+  ...(Array.isArray(manifest.permissions) ? manifest.permissions : []),
+  ...(Array.isArray(manifest.host_permissions) ? manifest.host_permissions : [])
+];
+assert.ok(
+  !declaredPermissions.some(permission =>
+    ["<all_urls>", "http://*/*", "https://*/*", "*://*/*"].includes(permission)
+  ),
+  "POC must not request broad host access"
+);
+assert.equal(manifest.host_permissions, undefined, "MV2 POC must not declare MV3 host_permissions");
 
 assert.match(contentScript, /OmegA WebExtension POC active/, "visible execution marker is missing");
 assert.match(contentScript, /OmegA Extension Active/, "observable document-title marker is missing");
-assert.doesNotMatch(manifest, /<all_urls>|https?:\/\/\*\//, "POC must not request broad host access");
 
-console.log("GeckoView WebExtension POC manifest/content-script checks passed.");
+const vm = require("node:vm");
+const appended = [];
+const document = {
+  title: "Example Domain",
+  documentElement: {
+    dataset: {},
+    appendChild(element) { appended.push(element); }
+  },
+  createElement(tag) {
+    assert.equal(tag, "div");
+    return { style: {}, setAttribute(name, value) { this[name] = value; } };
+  }
+};
+vm.runInNewContext(contentScript, { document });
+assert.equal(document.documentElement.dataset.omegaGeckoExtension, "active");
+assert.equal(document.title, "Example Domain | OmegA Extension Active");
+assert.equal(appended.length, 1);
+assert.equal(appended[0].textContent, "OmegA WebExtension POC active");
+assert.equal(appended[0].role, "status");
+
+console.log("GeckoView WebExtension POC manifest, permissions and content-script execution checks passed.");
