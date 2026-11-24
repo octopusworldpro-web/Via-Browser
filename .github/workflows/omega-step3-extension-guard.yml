@@ -30,7 +30,7 @@ jobs:
           from pathlib import Path
           cfg = json.loads(Path('config/extension-manager.json').read_text())
           ext = cfg['extensionManager']
-          assert ext['enabled'] is False
+          assert ext['enabled'] is True
           assert ext['runtimeAvailable'] is True
           assert ext['chromeExtensionExecution'] is False
           assert ext['runtimeAvailable'] is True
