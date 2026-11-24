@@ -1,44 +1,52 @@
 # Step 06 — Runtime Reconnaissance for Extension Integration
 
-**Status:** Automated decompilation reconnaissance added; findings pending CI  
-**Base:** Via Browser 7.4.1 compiled APK  
-**Purpose:** Identify the actual browser UI, WebView bridge, storage, file-picker and userscript integration points before attempting APK-level implementation.
+**Status:** CI decompilation and inventory completed; feasibility boundaries identified  
+**Base:** OmegA Browser 7.4.1-omega test APK  
+**Workflow run:** [45332809697](https://github.com/octopusworldpro-web/Via-Browser/actions/runs/45332809697)  
+**Artifact:** `OmegA-Browser-step6-runtime-recon` (artifact ID 14892512778)
 
-## Why this step exists
+## Verified inventory
 
-The repository does not contain the original Android source project. The current APK can be decoded and decompiled, but adding a real extension manager or Chrome-compatible runtime requires locating stable application entry points and understanding the existing WebView architecture first. Guessing class names or patching arbitrary DEX methods would risk breaking the browser.
+The successful JADX workflow decompiled **4,285 Java source files** and generated the inventory below:
 
-## Automated inspection
+| Capability area | Matching source files |
+|---|---:|
+| WebView construction/configuration | 9 |
+| Activity and Fragment entry points | 21 |
+| File/document picker | 4 |
+| WebView navigation hooks | 6 |
+| JavaScript bridge | 12 |
+| Persistent storage | 42 |
+| Download integration | 4 |
+| Existing userscript subsystem | 10 |
+| Chrome/WebExtension runtime indicators | **0** |
+| Extension package/import indicators | 6 |
+| WebView service worker/messaging | 10 |
 
-Workflow: `.github/workflows/omega-step6-runtime-recon.yml`
+Evidence samples include WebView classes `z7/g.java`, `d9/q.java`, `s4/b.java`; navigation classes `z7/g.java`, `d9/q.java`, `q4/j.java`; bridge classes `o5/b.java`, `o5/a.java`, `t4/b.java`; storage classes `w9/e.java`, `ea/b.java`, `ja/a.java`; and userscript classes `ia/d.java`, `ra/d1.java`, `ra/o.java`.
 
-It uses pinned JADX v1.5.7 to decompile the supplied APK and inventories source matches for Activity/Fragment entry points, WebView construction/navigation/JavaScript bridges, document picker flows, persistent storage, downloads, existing userscripts, Chrome/WebExtension indicators, package import, service workers and WebView messaging.
+## Interpretation
 
-The report is uploaded as a GitHub Actions artifact. No decompiled source is committed.
+- The APK is a WebView-based browser with existing userscript, storage, navigation, picker and bridge code.
+- The scan found **no** `chrome.runtime`, `chrome.tabs`, `chrome-extension://`, `browser.runtime` or equivalent WebExtension runtime markers.
+- Six generic package/import matches (such as ZIP/manifest handling) do not establish Chrome extension compatibility.
+- WebView service-worker APIs are not equivalent to Chrome extension background/service-worker APIs.
+- The report is static reconnaissance. It does not prove that any feature works at runtime.
 
-## Implementation gates
+## Feasibility decision
 
-1. Identify the browser Activity and WebView owner.
-2. Locate the existing settings/menu navigation used to add a manager entry.
-3. Determine whether file selection and app-private package storage can be safely reused.
-4. Locate the userscript subsystem boundary so it remains untouched.
-5. Confirm whether a viable WebExtension runtime is already embedded or must be added.
-6. Only then implement a small manager/import vertical slice and rebuild.
+A genuine Chrome extension implementation cannot be safely enabled by simply adding a ZIP importer or manager screen. It requires a compatible runtime: extension manifest processing, isolated content-script worlds, background/event lifecycle, API shims, permission enforcement, storage isolation, messaging and update/uninstall behavior. None is established by the inspected APK.
 
-## Safety rules
+The current workflow did not export the full decompiled source tree, so exact app-specific menu and WebView owner call sites still need deeper inspection before DEX patching. The inventory is retained as a bounded evidence report rather than guessing class names.
 
-- Decompiled code is evidence, not a source project or proof of buildability.
-- Do not claim Chrome extension support from userscript APIs or ZIP/CRX parsing alone.
-- Never execute imported package code during inspection.
-- Keep extension permissions and storage isolated from browser cookies, passwords, history and private tabs.
-- Do not commit generated decompiled source or original app secrets.
+## Completion
 
-## Completion criteria
+- [x] CI decompilation completes.
+- [x] Runtime inventory artifact generated.
+- [x] Static Chrome/WebExtension indicator scan completed.
+- [x] Feasibility boundary documented.
+- [ ] Device/emulator runtime validation.
+- [ ] Exact UI integration call sites confirmed.
+- [ ] Extension runtime implemented and validated.
 
-- [ ] CI decompilation completes.
-- [ ] Runtime inventory artifact is generated.
-- [ ] Actual app entry points and integration boundaries are identified from source evidence.
-- [ ] Feasibility decision is documented for APK-level UI/runtime implementation.
-- [ ] No feature is marked runnable until an installed APK is exercised on a device/emulator.
-
-**Current claim:** This step adds the inspection pipeline only. It does not yet implement the extension manager or Chrome extension runtime.
+**Step 06 is complete as reconnaissance only. It does not implement or advertise Chrome extension support.**
