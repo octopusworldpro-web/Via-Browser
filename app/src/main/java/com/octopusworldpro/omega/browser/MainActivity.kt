@@ -71,6 +71,7 @@ class MainActivity : Activity() {
     private val suggestionHandler = Handler(Looper.getMainLooper())
     private var suppressSuggestions = false
     private var suggestionTask: Runnable? = null
+    private var suggestionTarget: EditText? = null
     private val tabs = mutableListOf<String>()
     private val history = mutableListOf<String>()
     private val bookmarks = mutableListOf<String>()
@@ -121,7 +122,7 @@ class MainActivity : Activity() {
         root.addView(suggestionPanel, LinearLayout.LayoutParams(-1, -2))
         address.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { if (!suppressSuggestions) requestSuggestions(s?.toString().orEmpty()) }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { if (!suppressSuggestions) requestSuggestions(s?.toString().orEmpty(), address) }
             override fun afterTextChanged(s: Editable?) {}
         })
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
@@ -215,7 +216,8 @@ class MainActivity : Activity() {
         setStroke((1 * resources.displayMetrics.density).toInt().coerceAtLeast(1), Color.argb(35, 170, 150, 255))
     }
 
-    private fun requestSuggestions(raw: String) {
+    private fun requestSuggestions(raw: String, source: EditText = address) {
+        suggestionTarget = source
         suggestionTask?.let { suggestionHandler.removeCallbacks(it) }
         val query = raw.trim()
         if (query.length < 2 || query.startsWith("http://") || query.startsWith("https://")) {
@@ -236,7 +238,7 @@ class MainActivity : Activity() {
                     connection.disconnect()
                 } catch (_: Exception) {}
                 runOnUiThread {
-                    if (address.text.toString().trim() != query || results.isEmpty()) return@runOnUiThread
+                    if (suggestionTarget?.text?.toString()?.trim() != query || results.isEmpty()) return@runOnUiThread
                     suggestionPanel.removeAllViews()
                     results.take(6).forEach { value ->
                         val row = TextView(this).apply {
@@ -296,7 +298,7 @@ class MainActivity : Activity() {
         val search = EditText(this).apply {
             hint = "Search or enter website"; setSingleLine(true); textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
             setPadding(18, 8, 18, 8); background = rounded(panel, 18); imeOptions = EditorInfo.IME_ACTION_GO
-            setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_GO) { loadAddress(text.toString()); true } else false }
+            setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_GO || action == EditorInfo.IME_ACTION_DONE) { loadAddress(text.toString()); true } else false }
         }
         search.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -333,7 +335,12 @@ class MainActivity : Activity() {
         }
         val gridParams = LinearLayout.LayoutParams(-1, -2); gridParams.topMargin = 20; page.addView(grid, gridParams)
         page.addView(TextView(this).apply { text = "Customized by NirZon"; textSize = 11f; setTextColor(Color.GRAY); gravity = Gravity.CENTER; setPadding(0, 22, 0, 0) })
-        replaceWebWith(page)
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            addView(page)
+        }
+        replaceWebWith(scroll)
     }
 
     private fun replaceWebWith(view: View) {
@@ -377,9 +384,40 @@ class MainActivity : Activity() {
     private fun showList(title: String, items: MutableList<String>, allowAdd: Boolean) {
         val values = items.distinct().toTypedArray()
         val builder = AlertDialog.Builder(this).setTitle(title)
-        if (values.isEmpty()) builder.setMessage("Nothing here yet.") else builder.setItems(values) { _, which -> loadAddress(values[which]) }
-        if (allowAdd) builder.setPositiveButton("Bookmark current page") { _, _ -> if (!bookmarks.contains(currentUrl)) { bookmarks.add(currentUrl); persistSavedData(); Toast.makeText(this, "Bookmark saved", Toast.LENGTH_SHORT).show() } }
+        if (values.isEmpty()) {
+            builder.setMessage("Nothing here yet.")
+        } else {
+            builder.setItems(values) { _, which -> loadAddress(values[which]) }
+                .setNeutralButton("Manage") { _, _ -> showManageList(title, items, allowAdd) }
+        }
+        if (allowAdd) builder.setPositiveButton("Bookmark current page") { _, _ ->
+            if (currentUrl.isNotBlank() && !bookmarks.contains(currentUrl)) {
+                bookmarks.add(currentUrl); persistSavedData()
+                Toast.makeText(this, "Bookmark saved", Toast.LENGTH_SHORT).show()
+            }
+        }
         builder.setNegativeButton("Close", null).show()
+    }
+
+    private fun showManageList(title: String, items: MutableList<String>, bookmarksList: Boolean) {
+        val values = items.distinct().toTypedArray()
+        if (values.isEmpty()) { showList(title, items, bookmarksList); return }
+        AlertDialog.Builder(this).setTitle("Manage $title")
+            .setItems(values) { _, which ->
+                val selected = values[which]
+                AlertDialog.Builder(this).setTitle(if (bookmarksList) "Bookmark" else "History entry")
+                    .setMessage(selected)
+                    .setPositiveButton("Open") { _, _ -> loadAddress(selected) }
+                    .setNegativeButton("Remove") { _, _ ->
+                        items.remove(selected); persistSavedData()
+                        showManageList(title, items, bookmarksList)
+                    }.setNeutralButton("Done", null).show()
+            }
+            .setNeutralButton("Clear all") { _, _ ->
+                AlertDialog.Builder(this).setTitle("Clear $title?")
+                    .setPositiveButton("Clear") { _, _ -> items.clear(); persistSavedData(); Toast.makeText(this, "$title cleared", Toast.LENGTH_SHORT).show() }
+                    .setNegativeButton("Cancel", null).show()
+            }.setNegativeButton("Close", null).show()
     }
     private fun showDownloads() {
         try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
