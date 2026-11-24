@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk'
       - '.github/workflows/omega-step6-runtime-recon.yml'
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -17,6 +17,15 @@ jobs:
     steps:
       - name: Checkout APK and audit
         uses: actions/checkout@v4
+
+      - name: Download the latest verified OmegA APK build
+        uses: actions/download-artifact@v4
+        with:
+          name: OmegA-Browser-step4-ui-branding-test-build
+          path: work/base
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 45331285994
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -37,7 +46,7 @@ jobs:
       - name: Decompile base APK
         run: |
           mkdir -p work
-          jadx --no-res --show-bad-code -d work/jadx "Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk" || true
+          jadx --no-res --show-bad-code -d work/jadx "work/base/OmegA-Browser.apk" || true
           test -d work/jadx/sources
 
       - name: Generate runtime capability inventory
