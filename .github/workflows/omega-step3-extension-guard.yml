@@ -29,6 +29,11 @@ jobs:
           assert ext['chromeExtensionExecution'] is False
           assert ext['webStoreInstallEnabled'] is False
           assert ext['runtimeAdapterRequiredForExecution'] is True
+assert ext['engineStrategy'] == 'retain_android_webview'
+assert ext['implementationTarget'] == 'restricted_isolated_content_script_subset'
+assert ext['fullChromeExtensionCompatibility'] is False
+assert ext['geckoViewBundled'] is False
+assert ext['minSdkPreservationTarget'] == 19
           assert set(ext['plannedImportSources']) == {'local_zip', 'local_crx', 'web_store'}
           sec = ext['security']
           for key in ('executeDuringImport', 'autoGrantPermissions', 'exposeCookiesByDefault',
