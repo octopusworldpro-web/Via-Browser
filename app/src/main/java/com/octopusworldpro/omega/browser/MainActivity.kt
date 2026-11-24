@@ -82,6 +82,8 @@ class MainActivity : Activity() {
     private var fbStateContent: String? = null
     private var pendingExportContent: String? = null
     private var searchEngine = "Google"
+    private var javascriptEnabled = true
+    private var desktopMode = false
     private lateinit var prefs: android.content.SharedPreferences
     private var filePathCallback: android.webkit.ValueCallback<Array<Uri>>? = null
 
@@ -131,7 +133,7 @@ class MainActivity : Activity() {
         root.addView(progress, LinearLayout.LayoutParams(-1, 3))
         web = WebView(this).apply {
             setBackgroundColor(Color.WHITE)
-            settings.javaScriptEnabled = true
+            settings.javaScriptEnabled = javascriptEnabled
             settings.domStorageEnabled = true
             settings.loadsImagesAutomatically = true
             settings.javaScriptCanOpenWindowsAutomatically = false
@@ -158,7 +160,7 @@ class MainActivity : Activity() {
                     }
                 }
             }
-            if (identityUserAgent.isNotEmpty()) settings.userAgentString = identityUserAgent
+            if (identityUserAgent.isNotEmpty()) settings.userAgentString = identityUserAgent\n            if (desktopMode) settings.userAgentString = desktopUserAgent()
             settings.allowFileAccess = false
             settings.allowContentAccess = true
             if (Build.VERSION.SDK_INT >= 16) {
@@ -228,14 +230,31 @@ class MainActivity : Activity() {
             Thread {
                 val results = mutableListOf<String>()
                 try {
-                    val endpoint = URL("https://suggestqueries.google.com/complete/search?client=firefox&q=" + Uri.encode(query))
+                    val encoded = Uri.encode(query)
+                    val endpoint = when (searchEngine) {
+                        "Bing" -> URL("https://api.bing.com/osjson.aspx?query=$encoded")
+                        "DuckDuckGo" -> URL("https://duckduckgo.com/ac/?q=$encoded")
+                        else -> URL("https://suggestqueries.google.com/complete/search?client=firefox&q=$encoded")
+                    }
                     val connection = endpoint.openConnection() as HttpURLConnection
-                    connection.connectTimeout = 2500; connection.readTimeout = 2500
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0")
-                    val json = connection.inputStream.bufferedReader().use { it.readText() }
-                    val array = JSONArray(json).optJSONArray(1)
-                    if (array != null) for (i in 0 until array.length()) results.add(array.optString(i))
-                    connection.disconnect()
+                    try {
+                        connection.connectTimeout = 2500
+                        connection.readTimeout = 2500
+                        connection.setRequestProperty("User-Agent", "Mozilla/5.0")
+                        val json = connection.inputStream.bufferedReader().use { it.readText() }
+                        if (searchEngine == "DuckDuckGo") {
+                            val array = JSONArray(json)
+                            for (i in 0 until array.length()) {
+                                val phrase = array.optJSONObject(i)?.optString("phrase").orEmpty()
+                                if (phrase.isNotBlank()) results.add(phrase)
+                            }
+                        } else {
+                            val array = JSONArray(json).optJSONArray(1)
+                            if (array != null) for (i in 0 until array.length()) results.add(array.optString(i))
+                        }
+                    } finally {
+                        connection.disconnect()
+                    }
                 } catch (_: Exception) {}
                 runOnUiThread {
                     if (suggestionTarget?.text?.toString()?.trim() != query || results.isEmpty()) return@runOnUiThread
@@ -471,6 +490,9 @@ class MainActivity : Activity() {
         try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
         catch (_: Exception) { AlertDialog.Builder(this).setTitle("Downloads").setMessage("Open the Android Downloads app to view saved files.").setPositiveButton("OK", null).show() }
     }
+    private fun desktopUserAgent(): String =
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
     private fun searchUrl(query: String): String {
         val encoded = Uri.encode(query)
         return when (searchEngine) {
@@ -483,8 +505,8 @@ class MainActivity : Activity() {
     private fun showSettings() {
         val items = arrayOf(
             "Search engine: $searchEngine",
-            "JavaScript: ${if (web.settings.javaScriptEnabled) "On" else "Off"}",
-            "Desktop site: ${if (web.settings.userAgentString.contains("X-Desktop")) "On" else "Off"}",
+            "JavaScript: ${if (javascriptEnabled) "On" else "Off"}",
+            "Desktop site: ${if (desktopMode) "On" else "Off"}",
             "Clear browsing data",
             "About"
         )
@@ -496,10 +518,11 @@ class MainActivity : Activity() {
                         persistSavedData()
                         Toast.makeText(this, "Search engine: $searchEngine", Toast.LENGTH_SHORT).show()
                     }.show()
-                1 -> { web.settings.javaScriptEnabled = !web.settings.javaScriptEnabled; showSettings() }
+                1 -> { javascriptEnabled = !javascriptEnabled; web.settings.javaScriptEnabled = javascriptEnabled; persistSavedData(); showSettings() }
                 2 -> {
-                    val ua = web.settings.userAgentString
-                    web.settings.userAgentString = if (ua.contains("X-Desktop")) ua.replace("X-Desktop", "Mobile") else ua.replace("Mobile", "X-Desktop")
+                    desktopMode = !desktopMode
+                    web.settings.userAgentString = if (desktopMode) desktopUserAgent() else identityUserAgent.ifBlank { android.webkit.WebSettings.getDefaultUserAgent(this) }
+                    persistSavedData()
                     web.reload()
                     showSettings()
                 }
@@ -735,7 +758,7 @@ class MainActivity : Activity() {
         tabs.addAll(readList("tabs").take(19))
         identityUserAgent = prefs.getString("identity_ua", "") ?: ""
         identityLanguage = prefs.getString("identity_lang", "") ?: ""
-        searchEngine = prefs.getString("search_engine", "Google") ?: "Google"
+        searchEngine = prefs.getString("search_engine", "Google") ?: "Google"\n        javascriptEnabled = prefs.getBoolean("javascript_enabled", true)\n        desktopMode = prefs.getBoolean("desktop_mode", false)
     }
 
     private fun persistSavedData() {
@@ -745,7 +768,7 @@ class MainActivity : Activity() {
             .putString("tabs", JSONArray(tabs.takeLast(19)).toString())
             .putString("identity_ua", identityUserAgent)
             .putString("identity_lang", identityLanguage)
-            .putString("search_engine", searchEngine)
+            .putString("search_engine", searchEngine)\n            .putBoolean("javascript_enabled", javascriptEnabled)\n            .putBoolean("desktop_mode", desktopMode)
             .apply()
     }
 
