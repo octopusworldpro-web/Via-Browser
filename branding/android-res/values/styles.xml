@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Holo is retained as the API 19-compatible base; later API levels may
+         layer Material color attributes without raising minSdk. -->
+    <style name="OmegATheme" parent="@android:style/Theme.Holo.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">#19A7F5</item>
+        <item name="android:windowBackground">@color/omega_surface_light</item>
+    </style>
+    <style name="OmegATheme.Dark" parent="@android:style/Theme.Holo.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">@color/omega_surface_dark</item>
+    </style>
+</resources>
