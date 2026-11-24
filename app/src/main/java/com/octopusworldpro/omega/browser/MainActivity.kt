@@ -113,7 +113,7 @@ class MainActivity : Activity() {
                 if (action == EditorInfo.IME_ACTION_GO || action == EditorInfo.IME_ACTION_DONE) { loadAddress(text.toString()); true } else false
             }
         }
-        top.addView(address, LinearLayout.LayoutParams(0, 70 + (20 * resources.displayMetrics.density).toInt(), 1f).apply {
+        top.addView(address, LinearLayout.LayoutParams(0, 70 + (12 * resources.displayMetrics.density).toInt(), 1f).apply {
             marginEnd = (10 * resources.displayMetrics.density).toInt()
         })
         top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(38, 70 + (20 * resources.displayMetrics.density).toInt()))
@@ -202,7 +202,7 @@ class MainActivity : Activity() {
         }
         root.addView(web, LinearLayout.LayoutParams(-1, 0, 1f))
         val bottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(4, 0, 4, 0); setBackgroundColor(panel) }
-        val bottomButtonHeight = (63 * resources.displayMetrics.density).toInt()
+        val bottomButtonHeight = (55 * resources.displayMetrics.density).toInt()
         bottom.addView(button("‹") { if (web.canGoBack()) web.goBack() }, weight(bottomButtonHeight))
         bottom.addView(button("›") { if (web.canGoForward()) web.goForward() }, weight(bottomButtonHeight))
         bottom.addView(button("⌂") { showHome() }, weight(bottomButtonHeight))
