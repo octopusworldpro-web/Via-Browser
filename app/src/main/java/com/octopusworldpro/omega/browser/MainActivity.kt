@@ -58,7 +58,7 @@ private class OmegaMarkView(context: Context, private val markColor: Int) : View
     }
 }
 
-class MainActivity : Activity() {
+private data class SheetAction(val icon: String, val title: String, val subtitle: String, val action: () -> Unit)\n\nclass MainActivity : Activity() {
     private val bg = Color.rgb(9, 8, 23)
     private val panel = Color.rgb(25, 20, 43)
     private val accent = Color.rgb(168, 85, 247)
@@ -359,7 +359,7 @@ class MainActivity : Activity() {
         )
         shortcuts.forEach { item ->
             val tile = TextView(this).apply {
-                text = "${item.first}\n${item.second}"
+                text = "${item.icon}\n${item.title}"
                 textSize = 16f
                 setLineSpacing(3f, 1f)
                 gravity = Gravity.CENTER
@@ -370,7 +370,7 @@ class MainActivity : Activity() {
                 setPadding(8, 12, 8, 12)
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { item.third() }
+                setOnClickListener { item.subtitle() }
             }
             val lp = GridLayout.LayoutParams().apply { width = 0; height = 140; columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); setMargins(5, 7, 5, 7) }
             grid.addView(tile, lp)
@@ -408,15 +408,15 @@ class MainActivity : Activity() {
 
     private fun showMainMenu() {
         val options = listOf(
-            Triple("＋", "New tab", "Open a fresh browsing tab") { newTab() },
-            Triple("▢", "Tabs", "Switch between open pages") { showTabs() },
-            Triple("☆", "Bookmarks", "Saved websites") { showBookmarks() },
-            Triple("◷", "History", "Recently visited pages") { showHistory() },
-            Triple("↓", "Downloads", "Downloaded files") { showDownloads() },
-            Triple("🧩", "Extensions", "Manage installed add-ons") { showExtensions() },
-            Triple("⌁", "Device Identity", "User-Agent and language") { showIdentity() },
-            Triple("⚙", "Settings", "Browser preferences") { showSettings() },
-            Triple("ⓘ", "About OmegA", "Version and project information") { showAbout() }
+            SheetAction("＋", "New tab", "Open a fresh browsing tab") { newTab() },
+            SheetAction("▢", "Tabs", "Switch between open pages") { showTabs() },
+            SheetAction("☆", "Bookmarks", "Saved websites") { showBookmarks() },
+            SheetAction("◷", "History", "Recently visited pages") { showHistory() },
+            SheetAction("↓", "Downloads", "Downloaded files") { showDownloads() },
+            SheetAction("🧩", "Extensions", "Manage installed add-ons") { showExtensions() },
+            SheetAction("⌁", "Device Identity", "User-Agent and language") { showIdentity() },
+            SheetAction("⚙", "Settings", "Browser preferences") { showSettings() },
+            SheetAction("ⓘ", "About OmegA", "Version and project information") { showAbout() }
         )
         showActionSheet("OmegA Browser", "Quick access", options)
     }
@@ -424,7 +424,7 @@ class MainActivity : Activity() {
     private fun showActionSheet(
         title: String,
         subtitle: String,
-        actions: List<Triple<String, String, String, () -> Unit>>
+        actions: List<SheetAction>
     ) {
         val dialog = android.app.Dialog(this)
         val density = resources.displayMetrics.density
@@ -454,7 +454,7 @@ class MainActivity : Activity() {
             labels.addView(TextView(this).apply { text=item.second; textSize=15f; setTextColor(ink); setTypeface(null,android.graphics.Typeface.BOLD) })
             labels.addView(TextView(this).apply { text=item.third; textSize=11f; setTextColor(Color.LTGRAY) })
             row.addView(labels,LinearLayout.LayoutParams(0,-2,1f))
-            row.setOnClickListener { dialog.dismiss(); item.fourth() }
+            row.setOnClickListener { dialog.dismiss(); item.action() }
             sheet.addView(row,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=(7*density).toInt() })
         }
         val scroll=ScrollView(this).apply { isFillViewport=false; addView(sheet) }
