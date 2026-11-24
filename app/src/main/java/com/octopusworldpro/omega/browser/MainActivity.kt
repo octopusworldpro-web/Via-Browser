@@ -100,7 +100,7 @@ class MainActivity : Activity() {
     private fun buildShell() {
         root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 6, 14, 6); setBackgroundColor(bg) }
-        top.addView(TextView(this).apply { text = "Ω"; textSize = 29f; typeface = android.graphics.Typeface.DEFAULT_BOLD; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(38, 70))
+        top.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(30, 34).apply { gravity = Gravity.CENTER })
         address = EditText(this).apply {
             hint = "Search or enter address"; textSize = 15f; setSingleLine(true)
             setTextColor(ink); setHintTextColor(Color.LTGRAY); setPadding(16, 8, 12, 8)
