@@ -133,7 +133,7 @@ jobs:
           python3 - <<'PY'
           import re
           import subprocess
-          apk = "Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk"
+          apk = "work/input/OmegA-Browser.apk"
           output = subprocess.check_output(["aapt", "dump", "badging", apk], text=True)
           package = re.search(r"^package: name='([^']+)'", output, re.MULTILINE)
           minimum = re.search(r"^sdkVersion:'([^']+)'", output, re.MULTILINE)
