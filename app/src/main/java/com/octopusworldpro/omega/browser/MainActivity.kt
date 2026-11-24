@@ -606,18 +606,54 @@ class MainActivity : Activity() {
                 val enabledKey = LightweightExtensionRuntime.enabledKey(extensionId)
                 val enabled = prefs.getBoolean(enabledKey, false)
                 AlertDialog.Builder(this).setTitle(labels[which])
-                    .setMessage("Supports matching top-frame content scripts only. Scripts run in the webpage context; Chrome APIs, background workers and isolated worlds are not supported.")
+                    .setMessage("Limited content-script runtime: scripts execute in the webpage context. No Chrome APIs, background workers or isolated worlds. Site access is separately controlled.")
                     .setPositiveButton(if (enabled) "Disable" else "Enable") { _, _ ->
                         prefs.edit().putBoolean(enabledKey, !enabled).apply()
                         Toast.makeText(this, if (enabled) "Extension disabled" else "Extension enabled", Toast.LENGTH_SHORT).show()
                         if (web.visibility == View.VISIBLE) web.reload()
                         showExtensions()
-                    }.setNeutralButton("Remove") { _, _ ->
-                        prefs.edit().remove(enabledKey).apply()
+                    }.setNeutralButton("Site access") { _, _ ->
+                        val modes = arrayOf("Block all sites", "On click — current site once", "Selected sites — add current site", "All matching sites")
+                        val currentOrigin = try { val u = Uri.parse(currentUrl); "${u.scheme}://${u.authority}" } catch (_: Exception) { "" }
+                        AlertDialog.Builder(this).setTitle("Site access")
+                            .setItems(modes) { _, mode ->
+                                val edit = prefs.edit()
+                                when (mode) {
+                                    0 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "blocked")
+                                    1 -> {
+                                        edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "on_click")
+                                        if (currentOrigin.startsWith("http")) {
+                                            val grants = prefs.getStringSet(LightweightExtensionRuntime.oneTimeSitesKey(extensionId), emptySet())?.toMutableSet() ?: mutableSetOf()
+                                            grants.add(currentOrigin)
+                                            edit.putStringSet(LightweightExtensionRuntime.oneTimeSitesKey(extensionId), grants)
+                                        }
+                                    }
+                                    2 -> {
+                                        edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "selected_sites")
+                                        if (currentOrigin.startsWith("http")) {
+                                            val sites = prefs.getStringSet(LightweightExtensionRuntime.selectedSitesKey(extensionId), emptySet())?.toMutableSet() ?: mutableSetOf()
+                                            sites.add(currentOrigin)
+                                            edit.putStringSet(LightweightExtensionRuntime.selectedSitesKey(extensionId), sites)
+                                        }
+                                    }
+                                    3 -> edit.putString(LightweightExtensionRuntime.siteModeKey(extensionId), "all_sites")
+                                }
+                                edit.apply()
+                                if (mode == 1 && web.visibility == View.VISIBLE) web.reload()
+                                Toast.makeText(this, "Site access updated", Toast.LENGTH_SHORT).show()
+                                showExtensions()
+                            }.setNegativeButton("Cancel", null).show()
+                    }.setNegativeButton("Remove") { _, _ ->
+                        prefs.edit()
+                            .remove(enabledKey)
+                            .remove(LightweightExtensionRuntime.siteModeKey(extensionId))
+                            .remove(LightweightExtensionRuntime.selectedSitesKey(extensionId))
+                            .remove(LightweightExtensionRuntime.oneTimeSitesKey(extensionId))
+                            .apply()
                         dir.deleteRecursively()
                         Toast.makeText(this, "Extension removed", Toast.LENGTH_SHORT).show()
                         showExtensions()
-                    }.setNegativeButton("Back") { _, _ -> showExtensions() }.show()
+                    }.show()
             }.setNegativeButton("Close", null).show()
     }
 
