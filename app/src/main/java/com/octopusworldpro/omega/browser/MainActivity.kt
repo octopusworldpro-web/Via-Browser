@@ -391,8 +391,13 @@ class MainActivity : Activity() {
         val entries = (tabs + currentUrl).toTypedArray()
         AlertDialog.Builder(this).setTitle("Tabs (${entries.size}/20)")
             .setItems(entries) { _, which ->
-                currentUrl = entries[which]
-                if (which < tabs.size) tabs.removeAt(which)
+                if (which < tabs.size) {
+                    val selected = tabs[which]
+                    tabs[which] = currentUrl
+                    currentUrl = selected
+                } else {
+                    currentUrl = entries[which]
+                }
                 persistSavedData()
                 showBrowser()
                 web.loadUrl(currentUrl)
