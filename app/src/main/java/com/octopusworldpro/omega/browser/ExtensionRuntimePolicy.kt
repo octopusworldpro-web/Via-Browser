@@ -4,7 +4,8 @@ import java.io.File
 import java.net.URI
 
 internal object ExtensionRuntimePolicy {
-    fun matchesUrl(url: String, pattern: String): Boolean = try {
+    fun matchesUrl(url: String, pattern: String): Boolean {
+        return try {
         val target = URI(url)
         if (target.scheme !in listOf("http", "https") || target.host.isNullOrBlank()) return false
         if (pattern == "<all_urls>") return true
@@ -26,7 +27,8 @@ internal object ExtensionRuntimePolicy {
         if (!hostMatches) return false
         val path = (target.rawPath?.ifEmpty { "/" } ?: "/") + (target.rawQuery?.let { "?" + it } ?: "")
         Regex("^" + pathPattern.map { if (it == '*') ".*" else Regex.escape(it.toString()) }.joinToString("") + "$").matches(path)
-    } catch (_: Exception) { false }
+        } catch (_: Exception) { false }
+    }
 
     fun isSafeScript(directory: File, relativePath: String, maxBytes: Long): Boolean {
         if (relativePath.isBlank() || relativePath.startsWith("/") || relativePath.contains(92.toChar())) return false
