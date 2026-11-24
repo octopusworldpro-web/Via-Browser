@@ -155,6 +155,7 @@ class MainActivity : Activity() {
                     if (url != null && !url.startsWith("about:")) {
                         currentUrl = url
                         if (history.lastOrNull() != url) { history.add(url); persistSavedData() }
+                        LightweightExtensionRuntime.injectEnabled(this@MainActivity, this@MainActivity.web, url)
                     }
                 }
             }
@@ -600,9 +601,18 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle("Installed extensions")
             .setItems(labels) { _, which ->
                 val dir = installed[which]
+                val extensionId = dir.name
+                val enabledKey = LightweightExtensionRuntime.enabledKey(extensionId)
+                val enabled = prefs.getBoolean(enabledKey, false)
                 AlertDialog.Builder(this).setTitle(labels[which])
-                    .setMessage("Extension package is stored locally. This build supports ZIP installation and management; Chrome extension scripts/APIs are not executed.")
-                    .setPositiveButton("Remove") { _, _ ->
+                    .setMessage("Supports matching top-frame content scripts only. Scripts run in the webpage context; Chrome APIs, background workers and isolated worlds are not supported.")
+                    .setPositiveButton(if (enabled) "Disable" else "Enable") { _, _ ->
+                        prefs.edit().putBoolean(enabledKey, !enabled).apply()
+                        Toast.makeText(this, if (enabled) "Extension disabled" else "Extension enabled", Toast.LENGTH_SHORT).show()
+                        if (web.visibility == View.VISIBLE) web.reload()
+                        showExtensions()
+                    }.setNeutralButton("Remove") { _, _ ->
+                        prefs.edit().remove(enabledKey).apply()
                         dir.deleteRecursively()
                         Toast.makeText(this, "Extension removed", Toast.LENGTH_SHORT).show()
                         showExtensions()
@@ -672,8 +682,9 @@ class MainActivity : Activity() {
             val destination = File(base, id)
             if (destination.exists()) destination.deleteRecursively()
             if (!staging.renameTo(destination)) throw IllegalStateException("Could not finalize extension install")
+            prefs.edit().putBoolean(LightweightExtensionRuntime.enabledKey(id), false).apply()
             AlertDialog.Builder(this).setTitle("Extension installed")
-                .setMessage("$name v$version package files were installed. Extension execution is not yet enabled in this build.")
+                .setMessage("$name v$version installed disabled. Open Extensions, select it and tap Enable. Supported content scripts run on matching webpages; Chrome APIs/background workers are not supported.")
                 .setPositiveButton("OK", null).show()
         } catch (e: Exception) {
             staging.deleteRecursively()
