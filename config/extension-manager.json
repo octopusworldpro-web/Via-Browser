@@ -3,7 +3,7 @@
   "product": "OmegA Browser",
   "extensionManager": {
     "enabled": false,
-    "disabledReason": "Lightweight WebView-based runtime is only an implementation target; no safe runtime is integrated. ZIP/CRX/Web Store are planned only.",
+    "disabledReason": "No safe WebExtension runtime is integrated. Local ZIP/CRX support remains a future source-project task; Chrome Web Store support is intentionally excluded.",
     "defaultEnabled": false,
     "permissionPolicy": "explicit_least_privilege",
     "hostAccessModes": [
@@ -48,17 +48,61 @@
     "noBuiltInExtensionCatalog": true,
     "plannedImportSources": [
       "local_zip",
-      "local_crx",
-      "web_store"
+      "local_crx"
     ],
     "runtimeAvailable": false,
     "chromeExtensionExecution": false,
     "webStoreInstallEnabled": false,
+    "webStoreCompatibility": false,
     "engineStrategy": "retain_android_webview",
     "implementationTarget": "restricted_isolated_content_script_subset",
     "fullChromeExtensionCompatibility": false,
     "geckoViewBundled": false,
     "minSdkPreservationTarget": 19,
     "runtimeAdapterContract": "AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md"
+  },
+  "fbStateUtility": {
+    "enabled": false,
+    "product": "C3C FBState Utility",
+    "status": "specification_only_source_project_required",
+    "operations": [
+      "manual_import",
+      "validate",
+      "normalize",
+      "manual_export"
+    ],
+    "acceptedInputs": [
+      "user_selected_appstate_json",
+      "user_pasted_cookie_header",
+      "user_selected_netscape_cookie_file"
+    ],
+    "exportFormats": [
+      "appstate_json",
+      "netscape_cookie_file"
+    ],
+    "facebookDomainScope": [
+      "facebook.com",
+      ".facebook.com",
+      "messenger.com",
+      ".messenger.com"
+    ],
+    "automaticWebViewCookieExtraction": false,
+    "backgroundCollection": false,
+    "networkUpload": false,
+    "cloudSync": false,
+    "credentialLogging": false,
+    "passwordCollection": false,
+    "requireExplicitUserAction": true,
+    "requirePerOperationConsent": true,
+    "showSessionTokenWarning": true,
+    "keepDataInAppPrivateStorage": true,
+    "clearTemporaryDataOnExit": true,
+    "validateCookieNames": [
+      "c_user",
+      "xs"
+    ],
+    "rejectMalformedInput": true,
+    "rejectUnsupportedDomains": true,
+    "neverBypassSiteAuthentication": true
   }
 }
