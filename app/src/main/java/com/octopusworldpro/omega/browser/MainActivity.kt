@@ -223,7 +223,8 @@ class MainActivity : Activity() {
         address.setText(value)
         suppressSuggestions = false
         suggestionPanel.visibility = View.GONE
-        web.loadUrl(value)
+        if (identityLanguage.isNotBlank()) web.loadUrl(value, mapOf("Accept-Language" to identityLanguage))
+        else web.loadUrl(value)
     }
 
     private fun showHome() {
