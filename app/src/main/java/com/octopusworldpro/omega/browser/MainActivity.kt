@@ -201,12 +201,13 @@ class MainActivity : Activity() {
             }
         }
         root.addView(web, LinearLayout.LayoutParams(-1, 0, 1f))
-        val bottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(4, 6, 4, 8); setBackgroundColor(panel) }
-        bottom.addView(button("‹") { if (web.canGoBack()) web.goBack() }, weight())
-        bottom.addView(button("›") { if (web.canGoForward()) web.goForward() }, weight())
-        bottom.addView(button("⌂") { showHome() }, weight())
-        bottom.addView(button("＋") { newTab() }, weight())
-        bottom.addView(button("▢") { showTabs() }, weight())
+        val bottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(4, 0, 4, 0); setBackgroundColor(panel) }
+        val bottomButtonHeight = (63 * resources.displayMetrics.density).toInt()
+        bottom.addView(button("‹") { if (web.canGoBack()) web.goBack() }, weight(bottomButtonHeight))
+        bottom.addView(button("›") { if (web.canGoForward()) web.goForward() }, weight(bottomButtonHeight))
+        bottom.addView(button("⌂") { showHome() }, weight(bottomButtonHeight))
+        bottom.addView(button("＋") { newTab() }, weight(bottomButtonHeight))
+        bottom.addView(button("▢") { showTabs() }, weight(bottomButtonHeight))
         root.addView(bottom)
         root.isFocusableInTouchMode = true
         setContentView(root)
@@ -275,7 +276,7 @@ class MainActivity : Activity() {
         suggestionHandler.postDelayed(suggestionTask!!, 280)
     }
 
-    private fun weight() = LinearLayout.LayoutParams(0, 48, 1f)
+    private fun weight(height: Int = (48 * resources.displayMetrics.density).toInt()) = LinearLayout.LayoutParams(0, height, 1f)
     private fun button(label: String, action: () -> Unit): TextView = TextView(this).apply {
         text = label; textSize = 22f; gravity = Gravity.CENTER; setTextColor(ink); setOnClickListener { action() }
     }
@@ -628,6 +629,7 @@ class MainActivity : Activity() {
             staging.mkdirs()
             var totalBytes = 0L
             var fileCount = 0
+            val seenEntries = mutableSetOf<String>()
             contentResolver.openInputStream(uri)?.use { input ->
                 java.util.zip.ZipInputStream(java.io.BufferedInputStream(input)).use { zip ->
                     var entry = zip.nextEntry
@@ -635,9 +637,10 @@ class MainActivity : Activity() {
                         fileCount++
                         if (fileCount > 2000) throw IllegalArgumentException("ZIP contains too many files")
                         val name = entry.name.replace('\\', '/')
-                        if (name.startsWith("/") || name.split('/').any { it == ".." } || name.contains(":")) {
+                        if (name.isBlank() || name.startsWith("/") || name.split('/').any { it == ".." || it.isBlank() } || name.contains(":")) {
                             throw IllegalArgumentException("Unsafe ZIP entry path")
                         }
+                        if (!seenEntries.add(name.lowercase())) throw IllegalArgumentException("ZIP contains duplicate/conflicting paths")
                         if (name.isNotBlank()) {
                             val target = File(staging, name)
                             if (!target.canonicalPath.startsWith(staging.canonicalPath + File.separator)) {
@@ -672,6 +675,7 @@ class MainActivity : Activity() {
             }
             manifestFile = File(staging, "manifest.json")
             if (!manifestFile.isFile) throw IllegalArgumentException("manifest.json not found in ZIP")
+            if (manifestFile.length() > 256L * 1024L) throw IllegalArgumentException("manifest.json exceeds 256 KB")
             val manifest = org.json.JSONObject(manifestFile.readText())
             val manifestVersion = manifest.optInt("manifest_version", 0)
             if (manifestVersion !in 2..3) throw IllegalArgumentException("Only Manifest V2/V3 packages are recognized")
@@ -680,8 +684,13 @@ class MainActivity : Activity() {
             if (name.isBlank() || version.isBlank()) throw IllegalArgumentException("Manifest name/version is missing")
             val id = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').take(48).ifBlank { "extension" }
             val destination = File(base, id)
-            if (destination.exists()) destination.deleteRecursively()
-            if (!staging.renameTo(destination)) throw IllegalStateException("Could not finalize extension install")
+            val backup = File(base, "backup-$id-${System.currentTimeMillis()}")
+            if (destination.exists() && !destination.renameTo(backup)) throw IllegalStateException("Could not safely stage existing extension for update")
+            if (!staging.renameTo(destination)) {
+                if (backup.exists()) backup.renameTo(destination)
+                throw IllegalStateException("Could not finalize extension install; previous version was preserved")
+            }
+            if (backup.exists()) backup.deleteRecursively()
             prefs.edit().putBoolean(LightweightExtensionRuntime.enabledKey(id), false).apply()
             AlertDialog.Builder(this).setTitle("Extension installed")
                 .setMessage("$name v$version installed disabled. Open Extensions, select it and tap Enable. Supported content scripts run on matching webpages; Chrome APIs/background workers are not supported.")
