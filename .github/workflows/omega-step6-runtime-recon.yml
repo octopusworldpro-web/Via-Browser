@@ -55,16 +55,16 @@ jobs:
                   pass
           all_text = "\n".join(s for _, s in text)
           patterns = {
-              "WebView construction and configuration": r"new\\s+WebView|setWebViewClient|setWebChromeClient|addJavascriptInterface",
-              "Activity and Fragment entry points": r"extends\\s+(?:AppCompatActivity|Activity|Fragment)|implements\\s+Lifecycle",
+              "WebView construction and configuration": r"new\s+WebView|setWebViewClient|setWebChromeClient|addJavascriptInterface",
+              "Activity and Fragment entry points": r"extends\s+(?:AppCompatActivity|Activity|Fragment)|implements\s+Lifecycle",
               "File/document picker": r"ACTION_OPEN_DOCUMENT|ACTION_GET_CONTENT|onActivityResult|ActivityResultLauncher",
               "WebView navigation hooks": r"shouldOverrideUrlLoading|onPageStarted|onPageFinished|shouldInterceptRequest",
-              "JavaScript bridge": r"@JavascriptInterface|evaluateJavascript|loadUrl\\(.*javascript:",
+              "JavaScript bridge": r"@JavascriptInterface|evaluateJavascript|loadUrl\(.*javascript:",
               "Persistent storage": r"SharedPreferences|SQLiteDatabase|RoomDatabase|DataStore",
               "Download integration": r"DownloadManager|setDownloadListener",
               "Existing userscript subsystem": r"GM_getValue|GM_setValue|GM_xmlhttpRequest|userscript|UserScript",
-              "Chrome/WebExtension runtime indicators": r"chrome\\.runtime|chrome\\.tabs|chrome-extension://|browser\\.runtime|webextension",
-              "Extension package/import indicators": r"manifest\\.json|crx|zipinputstream|ZipFile|ZipInputStream",
+              "Chrome/WebExtension runtime indicators": r"chrome\.runtime|chrome\.tabs|chrome-extension://|browser\.runtime|webextension",
+              "Extension package/import indicators": r"manifest\.json|crx|zipinputstream|ZipFile|ZipInputStream",
               "WebView service worker and messaging": r"ServiceWorkerController|WebMessagePort|WebMessageListener|WebViewFeature",
           }
           lines = [
