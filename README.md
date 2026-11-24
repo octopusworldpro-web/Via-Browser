@@ -45,7 +45,7 @@ OmegA Browser is a separately branded Android APK based on Via Browser 7.4.1. Th
 | Device install / launch validation | Pending |
 | In-app About attribution | Pending |
 | Full in-app theme / splash integration | Pending |
-| Chrome extension runtime | Not implemented |
+| Chrome extension runtime | Blocked — no compatible engine in inspected APK |\n| Extension manager UI / ZIP-CRX importer | Design only; not integrated |\n| Device install / launch test | Not run |
 
 > CI currently produces a test-signed APK. It is not a production-signed release. A successful build does not replace physical-device installation and behavior testing.
 
@@ -59,7 +59,7 @@ Open [GitHub Actions](https://github.com/octopusworldpro-web/Via-Browser/actions
 - [Step 02 — Application identity](AUDIT/STEP-02-APP-IDENTITY.md)
 - [Step 03 — Branding integration](AUDIT/STEP-03-BRANDING-INTEGRATION.md)
 - [Step 04 — Browser core compatibility](AUDIT/STEP-04-BROWSER-CORE-COMPATIBILITY.md)
-- [Step 05 — Extension manager design](AUDIT/STEP-05-EXTENSION-MANAGER.md)
+- [Step 05 — Extension manager design](AUDIT/STEP-05-EXTENSION-MANAGER.md)\n- [Step 06 — Runtime reconnaissance](AUDIT/STEP-06-RUNTIME-RECONNAISSANCE.md)\n- [Step 07 — Runtime implementation status](AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md)
 
 ## Important
 
