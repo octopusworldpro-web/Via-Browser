@@ -79,7 +79,32 @@ jobs:
                   if isinstance(value, str) and old_id and old_id in value:
                       element.set(key, value.replace(old_id, new_id))
 
+          # Apply the approved OmegA adaptive launcher icon resources.
+          import shutil
+          branding = Path("branding/android-res")
+          (root / "res" / "drawable").mkdir(parents=True, exist_ok=True)
+          (root / "res" / "mipmap-anydpi-v26").mkdir(parents=True, exist_ok=True)
+          shutil.copy2(branding / "drawable" / "omega_launcher_background.xml",
+                       root / "res" / "drawable" / "omega_launcher_background.xml")
+          shutil.copy2(branding / "drawable" / "omega_launcher_foreground.xml",
+                       root / "res" / "drawable" / "omega_launcher_foreground.xml")
+          shutil.copy2(branding / "mipmap-anydpi-v26" / "ic_launcher.xml",
+                       root / "res" / "mipmap-anydpi-v26" / "ic_launcher.xml")
+          application.set(android + "icon", "@mipmap/ic_launcher")
+
           tree.write(manifest, encoding="utf-8", xml_declaration=True)
+
+          # Add OmegA About labels in a separate resource file to avoid clobbering Via strings.
+          omega_strings = root / "res" / "values" / "omega_brand.xml"
+          omega_strings.parent.mkdir(parents=True, exist_ok=True)
+          omega_strings.write_text(
+              '<?xml version="1.0" encoding="utf-8"?>\n'
+              '<resources>\n'
+              '    <string name="omega_about_title">About OmegA Browser</string>\n'
+              '    <string name="omega_customized_by">Customized by NirZon</string>\n'
+              '</resources>\n',
+              encoding="utf-8"
+          )
 
           # Update the existing app-name string wherever it is defined.
           for strings in (root / "res").glob("values*/strings.xml"):
@@ -121,6 +146,9 @@ jobs:
           grep -F "application-label:'OmegA Browser'" work/badging.txt
           grep -F "versionName='7.4.1-omega'" work/badging.txt
           grep -F "sdkVersion:'19'" work/badging.txt
+          grep -F "application-icon-160:" work/badging.txt
+          unzip -l work/OmegA-Browser.apk | grep -F "res/mipmap-anydpi-v26/ic_launcher.xml"
+          unzip -l work/OmegA-Browser.apk | grep -F "res/drawable/omega_launcher_foreground.xml"
           apksigner verify --verbose work/OmegA-Browser.apk
 
       - name: Upload test APK and build evidence
