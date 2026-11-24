@@ -33,11 +33,13 @@ jobs:
           assert ext['enabled'] is False
           assert ext['runtimeAvailable'] is False
           assert ext['chromeExtensionExecution'] is False
+          assert ext['runtimeAvailable'] is True
+          assert ext['enabled'] is True
           assert ext['webStoreInstallEnabled'] is False
           assert ext['webStoreCompatibility'] is False
-          assert ext['runtimeAdapterRequiredForExecution'] is True
+          assert ext['runtimeAdapterRequiredForExecution'] is False
           assert ext['engineStrategy'] == 'retain_android_webview'
-          assert ext['implementationTarget'] == 'restricted_isolated_content_script_subset'
+          assert ext['implementationTarget'] == 'limited_page_context_content_scripts'
           assert ext['fullChromeExtensionCompatibility'] is False
           assert ext['geckoViewBundled'] is False
           assert ext['minSdkPreservationTarget'] == 19
