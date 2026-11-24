@@ -33,9 +33,9 @@ OmegA Browser is a separately installable Android browser customization based on
 |---|---|---|
 | 1 | Base reverse engineering + OmegA identity & branding | **CI/build complete**; device verification pending |
 | 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI PASS; in-app UI/runtime tests blocked by missing Android source project |
-| 3 | Chrome Extension runtime + extension manager | **Lightweight WebView path selected; runtime blocked** by missing Android source project |
-| 4 | ZIP/CRX import, install/update/uninstall + storage/background/messaging | Not implemented |
-| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Not implemented |
+| 3 | Lightweight local extension path (ZIP/CRX only) | Web Store excluded; runtime blocked by missing Android source project |
+| 4 | Local package validation, install/update/uninstall + storage/runtime infrastructure | Not implemented |
+| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | FBState specification defined; app integration pending |
 | 6 | Full integration, security audit, device tests and release APK | Pending |
 
 ### Step 1 evidence
@@ -52,6 +52,8 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - Keep the existing Via WebView engine; do not bundle a second browser engine.
 - Avoid heavyweight libraries, bundled fonts, analytics, remote code and unnecessary UI frameworks.
 - Keep optional extension packages outside the base APK.
+- Do not provide Chrome Web Store integration; local ZIP/CRX is the only planned extension import path.
+- FBState operations must be manual, consent-gated and local-only; never collect WebView cookies automatically or upload session data.
 - Measure per-ABI APK size, install size, startup and memory before accepting dependencies.
 
 ## Current limitations
@@ -59,10 +61,9 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - Current successful APK is test-signed, not production-signed.
 - Physical device install/launch and side-by-side coexistence have not been verified.
 - Static reconnaissance found no Chrome/WebExtension runtime indicators in the inspected APK. Userscripts and generic ZIP parsing are not Chrome extension support.
-- GeckoView was rejected for the lightweight target: it materially increases package size, requires Android 8 / API 26 or later, and does not support Chrome MV3 background service workers on Firefox Android.
-- A restricted WebExtension-compatible content-script subset is only an implementation target; it is not yet implemented and is not full Chrome extension compatibility.
+- A restricted WebView content-script subset is only an implementation target; it is not yet implemented and is not full Chrome extension compatibility.
 - Device Identity scope is limited to browser-exposed values; hardware IMEI modification is not part of this project.
-- C3C FBState Utility integration is pending; any cookie/AppState export must be user-initiated and permission-gated.
+- C3C FBState Utility is specified but not integrated. Import/export must be explicitly initiated by the user; session tokens are sensitive and must remain local.
 
 ## Audit records
 
@@ -75,6 +76,7 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - [Step 3 — Extension manager design](AUDIT/STEP-05-EXTENSION-MANAGER.md)
 - [Step 3 — Runtime reconnaissance](AUDIT/STEP-06-RUNTIME-RECONNAISSANCE.md)
 - [Step 3 — Runtime implementation feasibility/blocker](AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md)
+- [Step 5 — C3C FBState Utility specification](AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md)
 
 ## Build artifacts
 
