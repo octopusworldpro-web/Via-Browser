@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "product": "OmegA Browser",
+  "extensionManager": {
+    "enabled": false,
+    "disabledReason": "Extension runtime adapter is not present in the current base APK.",
+    "supportedImportSources": [
+      "local_zip",
+      "local_crx",
+      "web_store"
+    ],
+    "defaultEnabled": false,
+    "permissionPolicy": "explicit_least_privilege",
+    "hostAccessModes": [
+      "on_click",
+      "selected_sites",
+      "all_sites"
+    ],
+    "runtimeStates": [
+      "unknown",
+      "compatible",
+      "partial",
+      "incompatible"
+    ],
+    "lifecycleStates": [
+      "staged",
+      "rejected",
+      "installed_disabled",
+      "enabled",
+      "error",
+      "incompatible",
+      "removed"
+    ],
+    "storage": {
+      "metadata": "app_private_database",
+      "packages": "app_private_extension_directory",
+      "isolatePerExtension": true,
+      "storeExecutableBytesInMetadataDb": false
+    },
+    "security": {
+      "executeDuringImport": false,
+      "autoGrantPermissions": false,
+      "exposeCookiesByDefault": false,
+      "exposePasswordsByDefault": false,
+      "exposeHistoryByDefault": false,
+      "rejectPathTraversal": true,
+      "rejectSymlinks": true,
+      "requireArchiveLimits": true,
+      "requireAtomicUpdates": true
+    },
+    "runtimeAdapterRequiredForExecution": true,
+    "preserveExistingUserscripts": true,
+    "noBuiltInExtensionCatalog": true
+  }
+}
