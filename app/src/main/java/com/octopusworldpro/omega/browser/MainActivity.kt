@@ -49,6 +49,7 @@ class MainActivity : Activity() {
     private var identityUserAgent = ""
     private var pendingImport = 0
     private lateinit var prefs: android.content.SharedPreferences
+    private var filePathCallback: android.webkit.ValueCallback<Array<Uri>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,7 +109,39 @@ class MainActivity : Activity() {
                     }
                 }
             }
+            if (identityUserAgent.isNotEmpty()) settings.userAgentString = identityUserAgent
+            settings.allowFileAccess = true
+            settings.allowContentAccess = true
+            settings.javaScriptCanOpenWindowsAutomatically = false
+            setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                try {
+                    val fileName = URLUtil.guessFileName(url, contentDisposition, mimeType)
+                    val request = DownloadManager.Request(Uri.parse(url)).apply {
+                        setMimeType(mimeType)
+                        addRequestHeader("User-Agent", userAgent)
+                        setTitle(fileName)
+                        setDescription("OmegA Browser download")
+                        setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                    }
+                    (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                    Toast.makeText(this@MainActivity, "Download started", Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(this@MainActivity, "Download could not start", Toast.LENGTH_LONG).show()
+                }
+            })
             webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(view: WebView?, callback: android.webkit.ValueCallback<Array<Uri>>?, params: FileChooserParams?): Boolean {
+                    filePathCallback?.onReceiveValue(null)
+                    filePathCallback = callback
+                    return try {
+                        startActivityForResult(params?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }, REQUEST_FILE)
+                        true
+                    } catch (_: Exception) {
+                        filePathCallback = null
+                        false
+                    }
+                }
                 override fun onProgressChanged(view: WebView?, newProgress: Int) { this@MainActivity.progress.progress = newProgress }
             }
         }
@@ -316,6 +349,12 @@ class MainActivity : Activity() {
     @Deprecated("Legacy activity result retained for API 19 compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_FILE) {
+            val result = if (resultCode == RESULT_OK && data?.data != null) arrayOf(data.data!!) else null
+            filePathCallback?.onReceiveValue(result)
+            filePathCallback = null
+            return
+        }
         if (requestCode != REQUEST_IMPORT || resultCode != RESULT_OK || data?.data == null) return
         try {
             val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { it.readText() } ?: ""
@@ -360,5 +399,5 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         if (::web.isInitialized && web.canGoBack() && web.visibility == View.VISIBLE) web.goBack() else showHome()
     }
-    companion object { private const val REQUEST_IMPORT = 4310 }
+    companion object { private const val REQUEST_IMPORT = 4310; private const val REQUEST_FILE = 4311 }
 }
