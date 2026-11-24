@@ -89,7 +89,7 @@ class MainActivity : Activity() {
             settings.setSupportMultipleWindows(false)
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                    if (url != null) { currentUrl = url; address.setText(url) }
+                    if (url != null) { currentUrl = url; suppressSuggestions = true; address.setText(url); suppressSuggestions = false }
                     this@MainActivity.progress.visibility = View.VISIBLE
                 }
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -194,6 +194,11 @@ class MainActivity : Activity() {
             setPadding(18, 8, 18, 8); background = rounded(panel, 18); imeOptions = EditorInfo.IME_ACTION_GO
             setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_GO) { loadAddress(text.toString()); true } else false }
         }
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { requestSuggestions(s?.toString().orEmpty()) }
+            override fun afterTextChanged(s: Editable?) {}
+        })
         val searchParams = LinearLayout.LayoutParams(-1, 54); searchParams.topMargin = 28; page.addView(search, searchParams)
         val grid = GridLayout(this).apply { columnCount = 3; rowCount = 2; useDefaultMargins = false }
         val shortcuts = listOf(
