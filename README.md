@@ -35,7 +35,7 @@ OmegA Browser is a separately installable Android browser customization based on
 | 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI PASS; in-app UI/runtime tests blocked by missing Android source project |
 | 3 | Lightweight local extension path (ZIP/CRX only) | Web Store excluded; runtime blocked by missing Android source project |
 | 4 | Local package validation, install/update/uninstall + storage/runtime infrastructure | Not implemented |
-| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | FBState specification defined; app integration pending |
+| 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | FBState parser/validator/export core implemented + CI PASS; in-app integration pending |
 | 6 | Full integration, security audit, device tests and release APK | Pending |
 
 ### Step 1 evidence
@@ -77,6 +77,7 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 - [Step 3 — Runtime reconnaissance](AUDIT/STEP-06-RUNTIME-RECONNAISSANCE.md)
 - [Step 3 — Runtime implementation feasibility/blocker](AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md)
 - [Step 5 — C3C FBState Utility specification](AUDIT/STEP-10-C3C-FBSTATE-UTILITY.md)
+- [Step 5 — FBState core implementation and tests](AUDIT/STEP-11-FBSTATE-CORE-IMPLEMENTATION.md)
 
 ## Build artifacts
 
