@@ -24,6 +24,21 @@ internal object LightweightExtensionRuntime {
 
         extensions.forEach { directory ->
             if (!prefs.getBoolean(enabledKey(directory.name), false)) return@forEach
+            val extensionId = directory.name
+            val origin = "${page.scheme}://${page.authority}"
+            val mode = prefs.getString(siteModeKey(extensionId), "blocked") ?: "blocked"
+            val allowed = when (mode) {
+                "all_sites" -> true
+                "selected_sites" -> prefs.getStringSet(selectedSitesKey(extensionId), emptySet())?.contains(origin) == true
+                "on_click" -> {
+                    val grants = prefs.getStringSet(oneTimeSitesKey(extensionId), emptySet())?.toMutableSet() ?: mutableSetOf()
+                    val hasGrant = grants.remove(origin)
+                    if (hasGrant) prefs.edit().putStringSet(oneTimeSitesKey(extensionId), grants).apply()
+                    hasGrant
+                }
+                else -> false
+            }
+            if (!allowed) return@forEach
             val manifestFile = File(directory, "manifest.json")
             if (!manifestFile.isFile) return@forEach
             try {
@@ -55,5 +70,8 @@ internal object LightweightExtensionRuntime {
     }
 
     fun enabledKey(id: String) = "extension_enabled_$id"
+    fun siteModeKey(id: String) = "extension_site_mode_$id"
+    fun selectedSitesKey(id: String) = "extension_selected_sites_$id"
+    fun oneTimeSitesKey(id: String) = "extension_one_time_sites_$id"
 
 }
