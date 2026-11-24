@@ -6,6 +6,9 @@ on:
     paths:
       - 'Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk'
       - '.github/workflows/omega-step4-core-audit.yml'
+      - 'AUDIT/STEP-04-BROWSER-CORE-COMPATIBILITY.md'
+      - 'branding/android-res/values/colors.xml'
+      - 'branding/android-res/values/styles.xml'
 
 permissions:
   contents: read
@@ -99,6 +102,22 @@ jobs:
                   failed.append(label)
           assert not failed, "Core preservation markers missing: " + ", ".join(failed)
           print("NOTE: marker presence is static evidence only; it does not prove runtime behavior.")
+          PY
+
+      - name: Verify OmegA UI token resources remain available
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root = Path('branding/android-res/values')
+          colors = ET.parse(root / 'colors.xml').getroot()
+          styles = ET.parse(root / 'styles.xml').getroot()
+          values = {node.attrib.get('name'): (node.text or '').strip() for node in colors.findall('color')}
+          expected = {'omega_violet': '#A855F7', 'omega_magenta': '#D946EF', 'omega_deep_violet': '#100B2B', 'omega_near_black': '#090817'}
+          for key, value in expected.items():
+              assert values.get(key, '').lower() == value.lower(), f'Missing or changed brand token: {key}'
+          assert styles.findall('style'), 'No OmegA style resources found'
+          print('PASS: OmegA palette and lightweight Android style resources are present')
           PY
 
       - name: Verify Android compatibility floor and original app namespace
