@@ -31,6 +31,8 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Validate bundled GeckoView WebExtension POC
+        run: node scripts/validate-gecko-extension-poc.js
       - name: Run utility and controller tests
         run: |
           node --test utilities/fbstate/fbstate.test.js
