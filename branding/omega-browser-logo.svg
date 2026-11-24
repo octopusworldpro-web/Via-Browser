@@ -1,11 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <title>OmegA Browser</title>
-  <desc>Three forward-leaning blue, coral and gold ribbons form a compact abstract OmegA mark.</desc>
-  <rect width="512" height="512" rx="112" fill="#101827"/>
-  <g transform="translate(54 54)">
-    <path d="M74 126c0-12 9-21 21-21h36v204l-74 76 17-259Z" fill="#19A7F5"/>
-    <path d="M214 76 270 62l101 254c7 18-1 38-19 45l-48 19L214 76Z" fill="#FF5A45"/>
-    <path d="M278 62 333 68l74 250c5 18-6 36-24 40l-49 11L278 62Z" fill="#FFC247"/>
-    <path d="M111 350 224 226l25 63-91 99c-12 13-31 15-45 5l-2-2Z" fill="#F7F9FC" opacity=".96"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#090817"/><stop offset=".55" stop-color="#100b2b"/><stop offset="1" stop-color="#050510"/></linearGradient>
+ <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".28" stop-color="#a9a7c8"/><stop offset=".52" stop-color="#f9f7ff"/><stop offset=".78" stop-color="#77728f"/><stop offset="1" stop-color="#fff"/></linearGradient>
+ <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a855f7"/><stop offset=".45" stop-color="#ec35ff"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>
+ <radialGradient id="globe"><stop stop-color="#37206f"/><stop offset=".75" stop-color="#130d31"/><stop offset="1" stop-color="#080717"/></radialGradient>
+ <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="12" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <clipPath id="clip"><circle cx="512" cy="432" r="135"/></clipPath>
+</defs>
+<rect x="38" y="38" width="948" height="948" rx="190" fill="url(#bg)" stroke="#a855f7" stroke-width="7" filter="url(#glow)"/>
+<rect x="55" y="55" width="914" height="914" rx="174" fill="none" stroke="#e9c8ff" stroke-opacity=".38" stroke-width="3"/>
+<path d="M512 120l43 65 76-23-18 78 65 48-82 12-31 74-53-63-53 63-31-74-82-12 65-48-18-78 76 23z" fill="url(#chrome)" stroke="#f5dfff" stroke-width="8"/>
+<path d="M450 298h124" stroke="#a855f7" stroke-width="13" stroke-linecap="round"/>
+<circle cx="512" cy="432" r="145" fill="url(#globe)" stroke="url(#violet)" stroke-width="10" filter="url(#glow)"/>
+<g clip-path="url(#clip)" fill="none" stroke="#b78aff" stroke-opacity=".65" stroke-width="4"><ellipse cx="512" cy="432" rx="58" ry="135"/><ellipse cx="512" cy="432" rx="112" ry="135"/><ellipse cx="512" cy="432" rx="135" ry="50"/><ellipse cx="512" cy="432" rx="135" ry="95"/><path d="M377 432h270M390 365h244M390 499h244"/></g>
+<path d="M260 550C370 455 575 425 720 305c88-72 158-24 122 49-45 91-188 154-325 210-133 54-280 93-313 159-23 47 19 76 80 64 104-20 200-79 286-124" fill="none" stroke="#3b0764" stroke-width="70" stroke-linecap="round"/>
+<path d="M260 550C370 455 575 425 720 305c88-72 158-24 122 49-45 91-188 154-325 210-133 54-280 93-313 159-23 47 19 76 80 64 104-20 200-79 286-124" fill="none" stroke="url(#violet)" stroke-width="42" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M225 700h574" stroke="#a855f7" stroke-opacity=".4" stroke-width="3"/>
+<text x="512" y="830" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="112" font-weight="700" letter-spacing="-6" fill="url(#chrome)">Omeg<tspan fill="#d946ef">A</tspan></text>
+<text x="512" y="895" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="34" letter-spacing="17" fill="#eee9ff">BROWSER</text>
+<path d="M250 882h88M686 882h88" stroke="#a855f7" stroke-width="5" stroke-linecap="round"/>
+<path d="M105 920c145 72 260 48 407 28 150-20 272 41 407-28" fill="none" stroke="url(#violet)" stroke-width="8" opacity=".85"/>
 </svg>
