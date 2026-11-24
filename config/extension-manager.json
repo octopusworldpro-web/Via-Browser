@@ -3,12 +3,7 @@
   "product": "OmegA Browser",
   "extensionManager": {
     "enabled": false,
-    "disabledReason": "Extension runtime adapter is not present in the current base APK.",
-    "supportedImportSources": [
-      "local_zip",
-      "local_crx",
-      "web_store"
-    ],
+    "disabledReason": "No compatible WebExtension runtime is integrated. ZIP/CRX/Web Store are planned sources only; packages must not be shown as installed or runnable.",
     "defaultEnabled": false,
     "permissionPolicy": "explicit_least_privilege",
     "hostAccessModes": [
@@ -50,6 +45,15 @@
     },
     "runtimeAdapterRequiredForExecution": true,
     "preserveExistingUserscripts": true,
-    "noBuiltInExtensionCatalog": true
+    "noBuiltInExtensionCatalog": true,
+    "plannedImportSources": [
+      "local_zip",
+      "local_crx",
+      "web_store"
+    ],
+    "runtimeAvailable": false,
+    "chromeExtensionExecution": false,
+    "webStoreInstallEnabled": false,
+    "runtimeAdapterContract": "AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md"
   }
 }
