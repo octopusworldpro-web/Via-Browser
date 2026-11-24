@@ -373,11 +373,54 @@ class MainActivity : Activity() {
             }
         }.show()
     }
-    private fun newTab() { tabs.add(currentUrl); currentUrl = "https://www.google.com"; address.setText(""); showBrowser(); web.loadUrl(currentUrl) }
+    private fun newTab() {
+        if (tabs.size >= 19) {
+            Toast.makeText(this, "Maximum 20 tabs reached", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (currentUrl.isNotBlank()) tabs.add(currentUrl)
+        currentUrl = "https://www.google.com"
+        persistSavedData()
+        suppressSuggestions = true
+        address.setText("")
+        suppressSuggestions = false
+        showBrowser()
+        web.loadUrl(currentUrl)
+    }
     private fun showTabs() {
         val entries = (tabs + currentUrl).toTypedArray()
-        AlertDialog.Builder(this).setTitle("Tabs (${entries.size})").setItems(entries) { _, which -> currentUrl = entries[which]; showBrowser(); web.loadUrl(currentUrl) }
-            .setPositiveButton("New tab") { _, _ -> newTab() }.setNegativeButton("Close", null).show()
+        AlertDialog.Builder(this).setTitle("Tabs (${entries.size}/20)")
+            .setItems(entries) { _, which ->
+                currentUrl = entries[which]
+                if (which < tabs.size) tabs.removeAt(which)
+                persistSavedData()
+                showBrowser()
+                web.loadUrl(currentUrl)
+            }
+            .setPositiveButton("New tab") { _, _ -> newTab() }
+            .setNeutralButton("Manage") { _, _ -> manageTabs() }
+            .setNegativeButton("Close", null).show()
+    }
+
+    private fun manageTabs() {
+        val entries = tabs.toTypedArray()
+        if (entries.isEmpty()) {
+            AlertDialog.Builder(this).setTitle("Manage tabs").setMessage("No background tabs.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        AlertDialog.Builder(this).setTitle("Close a background tab")
+            .setItems(entries) { _, which ->
+                tabs.removeAt(which)
+                persistSavedData()
+                manageTabs()
+            }
+            .setNeutralButton("Close all background tabs") { _, _ ->
+                tabs.clear()
+                persistSavedData()
+                Toast.makeText(this, "Background tabs closed", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Done", null).show()
     }
     private fun showBookmarks() = showList("Bookmarks", bookmarks, true)
     private fun showHistory() = showList("History", history, false)
@@ -631,7 +674,7 @@ class MainActivity : Activity() {
         }
         if (requestCode != REQUEST_IMPORT || resultCode != RESULT_OK || data?.data == null) return
         try {
-            val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { it.readText() } ?: ""
+            val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { reader ->\n                val text = reader.readText()\n                if (text.length > 1024 * 1024) throw IllegalArgumentException("Selected file exceeds 1 MB limit")\n                text\n            } ?: ""
             val names = when (pendingImport) {
                 0 -> {
                     val rootJson = org.json.JSONTokener(source).nextValue()
@@ -679,6 +722,7 @@ class MainActivity : Activity() {
         }
         bookmarks.addAll(readList("bookmarks"))
         history.addAll(readList("history"))
+        tabs.addAll(readList("tabs").take(19))
         identityUserAgent = prefs.getString("identity_ua", "") ?: ""
         identityLanguage = prefs.getString("identity_lang", "") ?: ""
         searchEngine = prefs.getString("search_engine", "Google") ?: "Google"
@@ -688,6 +732,7 @@ class MainActivity : Activity() {
         prefs.edit()
             .putString("bookmarks", JSONArray(bookmarks.distinct().takeLast(500)).toString())
             .putString("history", JSONArray(history.distinct().takeLast(500)).toString())
+            .putString("tabs", JSONArray(tabs.takeLast(19)).toString())
             .putString("identity_ua", identityUserAgent)
             .putString("identity_lang", identityLanguage)
             .putString("search_engine", searchEngine)
