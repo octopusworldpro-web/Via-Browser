@@ -78,9 +78,6 @@ class MainActivity : Activity() {
     private var currentUrl = "https://www.google.com"
     private var identityLanguage = ""
     private var identityUserAgent = ""
-    private var pendingImport = 0
-    private var fbStateContent: String? = null
-    private var pendingExportContent: String? = null
     private var searchEngine = "Google"
     private var javascriptEnabled = true
     private var desktopMode = false
@@ -329,10 +326,9 @@ class MainActivity : Activity() {
         val grid = GridLayout(this).apply { columnCount = 3; useDefaultMargins = false; alignmentMode = GridLayout.ALIGN_BOUNDS }
         val shortcuts = listOf(
             Triple("▣", "Bookmarks", { showBookmarks() }), Triple("◷", "History", { showHistory() }),
-            Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "FBState Utility", { showFbState() }),
+            Triple("↓", "Downloads", { showDownloads() }), Triple("🧩", "Extensions", { showExtensions() }),
             Triple("f", "Facebook", { loadAddress("https://www.facebook.com/") }),
             Triple("◎", "Instagram", { loadAddress("https://www.instagram.com/") }),
-            Triple("◉", "IG Cookie Check", { showInstagramCookieUtility() }),
             Triple("⌁", "Device Identity", { showIdentity() }), Triple("⚙", "Settings", { showSettings() })
         )
         shortcuts.forEach { item ->
@@ -385,11 +381,11 @@ class MainActivity : Activity() {
     }
 
     private fun showMainMenu() {
-        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "FBState Utility", "Device Identity Manager", "Settings", "About")
+        val options = arrayOf("New tab", "Tabs", "Bookmarks", "History", "Downloads", "Extensions", "Device Identity Manager", "Settings", "About")
         AlertDialog.Builder(this).setTitle("OmegA Browser").setItems(options) { _, which ->
             when (which) {
                 0 -> newTab(); 1 -> showTabs(); 2 -> showBookmarks(); 3 -> showHistory()
-                4 -> showDownloads(); 5 -> showFbState(); 6 -> showIdentity(); 7 -> showSettings(); 8 -> showAbout()
+                4 -> showDownloads(); 5 -> showExtensions(); 6 -> showIdentity(); 7 -> showSettings(); 8 -> showAbout()
             }
         }.show()
     }
@@ -555,151 +551,6 @@ class MainActivity : Activity() {
                 Toast.makeText(this, "Profile saved for browser session.", Toast.LENGTH_SHORT).show()
             }.setNegativeButton("Cancel", null).show()
     }
-    private fun showInstagramCookieUtility() {
-        val input = EditText(this).apply {
-            hint = "Paste a cookie header to check its format"
-            setSingleLine(false)
-            minLines = 3
-            maxLines = 5
-            textSize = 13f
-            setTextColor(ink)
-            setHintTextColor(Color.GRAY)
-        }
-        AlertDialog.Builder(this).setTitle("Instagram Cookie Check")
-            .setMessage("Paste a cookie header you already have. Values are checked in memory only, masked in the result, and are not saved, copied, uploaded, or applied to a login session.")
-            .setView(input)
-            .setPositiveButton("Validate") { _, _ ->
-                val raw = input.text.toString().trim()
-                try {
-                    if (raw.isBlank()) throw IllegalArgumentException("No cookie header provided")
-                    val pairs = raw.split(";").map { part ->
-                        val pair = part.trim().split("=", limit = 2)
-                        if (pair.size != 2 || pair[0].isBlank() || pair[1].isBlank()) throw IllegalArgumentException("Invalid cookie pair")
-                        pair[0].trim() to pair[1].trim()
-                    }
-                    val names = pairs.map { it.first }.distinct()
-                    val hasSession = names.contains("sessionid")
-                    val hasCsrf = names.contains("csrftoken")
-                    val report = "Cookies found: ${names.size}\n" +
-                        "sessionid: ${if (hasSession) "present (value hidden)" else "missing"}\n" +
-                        "csrftoken: ${if (hasCsrf) "present (value hidden)" else "missing"}\n\n" +
-                        "Cookie names:\n" + names.joinToString("\n")
-                    AlertDialog.Builder(this).setTitle(if (hasSession && hasCsrf) "Cookie format looks valid" else "Required cookies missing")
-                        .setMessage(report).setPositiveButton("OK", null).show()
-                } catch (e: Exception) {
-                    Toast.makeText(this, e.message ?: "Invalid cookie header", Toast.LENGTH_LONG).show()
-                }
-            }.setNegativeButton("Cancel", null).show()
-    }
-
-    private fun showFbState() {
-        AlertDialog.Builder(this)
-            .setTitle("FBState Utility")
-            .setMessage("Manual, consent-based and local-only. Session cookies are sensitive; values are masked and never uploaded.")
-            .setPositiveButton("Continue") { _, _ -> showFbStateOptions() }
-            .setNegativeButton("Close", null)
-            .show()
-    }
-
-    private fun showFbStateOptions() {
-        val options = arrayOf(
-            "Import AppState JSON",
-            "Import Cookie Header",
-            "Import Netscape file",
-            "Export imported FBState"
-        )
-        AlertDialog.Builder(this).setTitle("FBState Utility")
-            .setItems(options) { _, which ->
-                when (which) {
-                    1 -> showCookieHeaderImport()
-                    3 -> {
-                        val data = fbStateContent
-                        if (data.isNullOrBlank()) {
-                            AlertDialog.Builder(this).setTitle("Nothing to export")
-                                .setMessage("Import and validate an FBState file or Cookie Header first. Then return here and choose Export imported FBState.")
-                                .setPositiveButton("OK", null).show()
-                        } else {
-                            AlertDialog.Builder(this).setTitle("Export FBState backup?")
-                                .setMessage("The selected backup may contain reusable account credentials. Save it only to a private, trusted location. OmegA does not extract cookies from your active Facebook login.")
-                                .setPositiveButton("Save file") { _, _ ->
-                                    pendingExportContent = data
-                                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                                        addCategory(Intent.CATEGORY_OPENABLE)
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TITLE, "omegA-fbstate-backup.txt")
-                                    }
-                                    startActivityForResult(intent, REQUEST_EXPORT)
-                                }.setNegativeButton("Cancel", null).show()
-                        }
-                    }
-                    else -> {
-                        AlertDialog.Builder(this).setTitle("Import FBState")
-                            .setMessage("Choose an FBState file that you already have. Active browser login cookies are not read or extracted.")
-                            .setPositiveButton("Choose file") { _, _ ->
-                                pendingImport = which
-                                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                    addCategory(Intent.CATEGORY_OPENABLE)
-                                    type = "*/*"
-                                }
-                                startActivityForResult(intent, REQUEST_IMPORT)
-                            }.setNegativeButton("Cancel", null).show()
-                    }
-                }
-            }.setNegativeButton("Close", null).show()
-    }
-    private fun showCookieHeaderImport() {
-        val editor = EditText(this).apply {
-            hint = "c_user=...; xs=...; other_cookie=..."
-            setTextColor(ink)
-            setHintTextColor(Color.GRAY)
-            textSize = 14f
-            minLines = 3
-            maxLines = 6
-            setPadding(18, 12, 18, 12)
-        }
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(22, 4, 22, 0)
-            addView(TextView(this@MainActivity).apply {
-                text = "Paste a Cookie header you obtained yourself. Values stay in memory and are hidden in the preview."
-                setTextColor(ink)
-                textSize = 13f
-            })
-            addView(editor, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 12 })
-        }
-        AlertDialog.Builder(this).setTitle("Import Cookie Header")
-            .setView(container)
-            .setPositiveButton("Validate") { _, _ ->
-                try {
-                    val raw = editor.text.toString().trim()
-                    if (raw.isBlank() || raw.length > 1024 * 1024 || raw.contains('\n') || raw.contains('\r')) {
-                        throw IllegalArgumentException("Cookie header is empty or too large")
-                    }
-                    val pairs = raw.split(";").map { part ->
-                        val index = part.indexOf('=')
-                        if (index <= 0) throw IllegalArgumentException("Invalid cookie pair")
-                        val name = part.substring(0, index).trim()
-                        val value = part.substring(index + 1).trim()
-                        if (name.isBlank() || value.isBlank()) throw IllegalArgumentException("Cookie name/value is empty")
-                        name to value
-                    }
-                    val names = pairs.map { it.first }.distinct()
-                    if (!names.contains("c_user") || !names.contains("xs")) {
-                        throw IllegalArgumentException("Required c_user and xs cookies are missing")
-                    }
-                    fbStateContent = raw
-                    val preview = names.joinToString("\n") { "$it = ••••••••" }
-                    AlertDialog.Builder(this).setTitle("FBState validated")
-                        .setMessage("Cookie names: " + names.size + "\nRequired c_user + xs: present\n\n" + preview)
-                        .setPositiveButton("OK", null).show()
-                } catch (e: Exception) {
-                    AlertDialog.Builder(this).setTitle("Cookie Header invalid")
-                        .setMessage(e.message ?: "Could not validate Cookie header")
-                        .setPositiveButton("OK", null).show()
-                }
-            }.setNegativeButton("Cancel", null).show()
-    }
-
     @Deprecated("Legacy activity result retained for API 19 compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -709,61 +560,128 @@ class MainActivity : Activity() {
             filePathCallback = null
             return
         }
-        if (requestCode == REQUEST_EXPORT) {
-            val uri = if (resultCode == RESULT_OK) data?.data else null
-            try {
-                if (uri != null && pendingExportContent != null) contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(pendingExportContent!!) }
-                Toast.makeText(this, if (uri != null) "FBState backup exported locally" else "Export cancelled", Toast.LENGTH_LONG).show()
-            } catch (_: Exception) { Toast.makeText(this, "Could not export backup", Toast.LENGTH_LONG).show() }
-            pendingExportContent = null
+        if (requestCode == REQUEST_EXTENSION_ZIP && resultCode == RESULT_OK && data?.data != null) {
+            installExtensionZip(data.data!!)
+        }
+    }
+
+    private fun showExtensions() {
+        val base = File(filesDir, "extensions")
+        if (!base.exists()) base.mkdirs()
+        val installed = base.listFiles()?.filter { it.isDirectory && File(it, "manifest.json").isFile } ?: emptyList()
+        val actions = arrayOf("Install extension from ZIP", "Manage installed extensions (${installed.size})")
+        AlertDialog.Builder(this).setTitle("Extension Manager")
+            .setItems(actions) { _, which ->
+                if (which == 0) {
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "application/zip"
+                        putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+                    }
+                    startActivityForResult(intent, REQUEST_EXTENSION_ZIP)
+                } else showInstalledExtensions(installed)
+            }.setNegativeButton("Close", null).show()
+    }
+
+    private fun showInstalledExtensions(installed: List<File>) {
+        if (installed.isEmpty()) {
+            AlertDialog.Builder(this).setTitle("Installed extensions")
+                .setMessage("No extensions installed yet. Choose Install extension from ZIP to add one.")
+                .setPositiveButton("OK", null).show()
             return
         }
-        if (requestCode != REQUEST_IMPORT || resultCode != RESULT_OK || data?.data == null) return
+        val labels = installed.map { dir ->
+            try {
+                val manifest = org.json.JSONObject(File(dir, "manifest.json").readText())
+                "${manifest.optString("name", dir.name)} • v${manifest.optString("version", "?")}"
+            } catch (_: Exception) { dir.name }
+        }.toTypedArray()
+        AlertDialog.Builder(this).setTitle("Installed extensions")
+            .setItems(labels) { _, which ->
+                val dir = installed[which]
+                AlertDialog.Builder(this).setTitle(labels[which])
+                    .setMessage("Extension package is stored locally. This build supports ZIP installation and management; Chrome extension scripts/APIs are not executed.")
+                    .setPositiveButton("Remove") { _, _ ->
+                        dir.deleteRecursively()
+                        Toast.makeText(this, "Extension removed", Toast.LENGTH_SHORT).show()
+                        showExtensions()
+                    }.setNegativeButton("Back") { _, _ -> showExtensions() }.show()
+            }.setNegativeButton("Close", null).show()
+    }
+
+    private fun installExtensionZip(uri: Uri) {
+        val base = File(filesDir, "extensions")
+        if (!base.exists()) base.mkdirs()
+        val staging = File(base, "install-${System.currentTimeMillis()}")
         try {
-            val source = contentResolver.openInputStream(data.data!!)?.bufferedReader()?.use { reader ->
-                val text = reader.readText()
-                if (text.length > 1024 * 1024) throw IllegalArgumentException("Selected file exceeds 1 MB limit")
-                text
-            } ?: ""
-            val names = when (pendingImport) {
-                0 -> {
-                    val rootJson = org.json.JSONTokener(source).nextValue()
-                    val array = if (rootJson is org.json.JSONObject) rootJson.optJSONArray("cookies") else rootJson as? JSONArray
-                    if (array == null) throw IllegalArgumentException("AppState must contain a cookie array")
-                    (0 until array.length()).mapNotNull { i ->
-                        val item = array.optJSONObject(i) ?: return@mapNotNull null
-                        val name = item.optString("name", item.optString("key"))
-                        val value = item.optString("value")
-                        val domain = item.optString("domain", ".facebook.com").removePrefix(".")
-                        if (name.isBlank() || value.isBlank()) throw IllegalArgumentException("Cookie name/value is empty")
-                        if (!(domain == "facebook.com" || domain.endsWith(".facebook.com") || domain == "messenger.com" || domain.endsWith(".messenger.com"))) throw IllegalArgumentException("Unsupported cookie domain")
-                        name
+            staging.mkdirs()
+            var totalBytes = 0L
+            var fileCount = 0
+            contentResolver.openInputStream(uri)?.use { input ->
+                java.util.zip.ZipInputStream(java.io.BufferedInputStream(input)).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        fileCount++
+                        if (fileCount > 2000) throw IllegalArgumentException("ZIP contains too many files")
+                        val name = entry.name.replace('\\\\', '/')
+                        if (name.startsWith("/") || name.split('/').any { it == ".." } || name.contains(":")) {
+                            throw IllegalArgumentException("Unsafe ZIP entry path")
+                        }
+                        if (name.isNotBlank()) {
+                            val target = File(staging, name)
+                            if (!target.canonicalPath.startsWith(staging.canonicalPath + File.separator)) {
+                                throw IllegalArgumentException("Unsafe ZIP path")
+                            }
+                            if (entry.isDirectory) target.mkdirs() else {
+                                target.parentFile?.mkdirs()
+                                target.outputStream().use { output ->
+                                    val buffer = ByteArray(8192)
+                                    while (true) {
+                                        val count = zip.read(buffer)
+                                        if (count < 0) break
+                                        totalBytes += count
+                                        if (totalBytes > 20L * 1024L * 1024L) throw IllegalArgumentException("Extension ZIP exceeds 20 MB")
+                                        output.write(buffer, 0, count)
+                                    }
+                                }
+                            }
+                        }
+                        zip.closeEntry()
+                        entry = zip.nextEntry
                     }
                 }
-                1 -> source.split(";").map {
-                    val pair = it.trim().split("=", limit = 2)
-                    if (pair.size != 2 || pair[0].isBlank() || pair[1].isBlank()) throw IllegalArgumentException("Invalid Cookie header")
-                    pair[0].trim()
+            } ?: throw IllegalArgumentException("Could not open selected ZIP")
+            var manifestFile = File(staging, "manifest.json")
+            if (!manifestFile.isFile) {
+                val nested = staging.listFiles()?.filter { it.isDirectory }?.singleOrNull()
+                if (nested != null && File(nested, "manifest.json").isFile) {
+                    nested.listFiles()?.forEach { it.renameTo(File(staging, it.name)) }
+                    nested.delete()
                 }
-                else -> source.lines().filter { it.isNotBlank() && (!it.startsWith("#") || it.startsWith("#HttpOnly_")) }.map { line ->
-                    val normalizedLine = if (line.startsWith("#HttpOnly_")) line.removePrefix("#HttpOnly_") else line
-                    val fields = normalizedLine.split("\\t")
-                    if (fields.size != 7) throw IllegalArgumentException("Invalid Netscape cookie row")
-                    val domain = fields[0].removePrefix(".")
-                    if (!(domain == "facebook.com" || domain.endsWith(".facebook.com") || domain == "messenger.com" || domain.endsWith(".messenger.com"))) throw IllegalArgumentException("Unsupported cookie domain")
-                    if (fields[5].isBlank() || fields[6].isBlank()) throw IllegalArgumentException("Cookie name/value is empty")
-                    fields[5]
-                }
-            }.distinct()
-            val valid = names.contains("c_user") && names.contains("xs")
-            if (!valid) throw IllegalArgumentException("Required c_user and xs cookies are missing")
-            fbStateContent = source
-            val preview = names.joinToString("\n") { "$it = ••••••••" }
-            AlertDialog.Builder(this).setTitle(if (valid) "FBState validated" else "Validation incomplete")
-                .setMessage("Cookie names: ${names.size}\nRequired c_user + xs: ${if (valid) "present" else "missing"}\n\n$preview")
+            }
+            manifestFile = File(staging, "manifest.json")
+            if (!manifestFile.isFile) throw IllegalArgumentException("manifest.json not found in ZIP")
+            val manifest = org.json.JSONObject(manifestFile.readText())
+            val manifestVersion = manifest.optInt("manifest_version", 0)
+            if (manifestVersion !in 2..3) throw IllegalArgumentException("Only Manifest V2/V3 packages are recognized")
+            val name = manifest.optString("name").trim()
+            val version = manifest.optString("version").trim()
+            if (name.isBlank() || version.isBlank()) throw IllegalArgumentException("Manifest name/version is missing")
+            val id = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').take(48).ifBlank { "extension" }
+            val destination = File(base, id)
+            if (destination.exists()) destination.deleteRecursively()
+            if (!staging.renameTo(destination)) throw IllegalStateException("Could not finalize extension install")
+            AlertDialog.Builder(this).setTitle("Extension installed")
+                .setMessage("$name v$version package files were installed. Extension execution is not yet enabled in this build.")
                 .setPositiveButton("OK", null).show()
-        } catch (_: Exception) { Toast.makeText(this, "Could not read selected file.", Toast.LENGTH_LONG).show() }
+        } catch (e: Exception) {
+            staging.deleteRecursively()
+            AlertDialog.Builder(this).setTitle("Extension install failed")
+                .setMessage(e.message ?: "Invalid or unsupported extension ZIP")
+                .setPositiveButton("OK", null).show()
+        }
     }
+
     private fun loadSavedData() {
         fun readList(key: String): MutableList<String> {
             return try {
@@ -801,5 +719,5 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         if (::web.isInitialized && web.canGoBack() && web.visibility == View.VISIBLE) web.goBack() else showHome()
     }
-    companion object { private const val REQUEST_IMPORT = 4310; private const val REQUEST_FILE = 4311; private const val REQUEST_EXPORT = 4312 }
+    companion object { private const val REQUEST_FILE = 4311; private const val REQUEST_EXTENSION_ZIP = 4313 }
 }
