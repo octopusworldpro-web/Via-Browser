@@ -9,8 +9,8 @@ android {
 
     defaultConfig {
         applicationId 'com.octopusworldpro.omega.browser.geckopoc'
-        // GeckoView currently requires Android 8.0 / API 26 or newer.
-        // This isolated prototype deliberately does not raise the main app's API 19 floor.
+        // GeckoView requires Android 8.0 / API 26 or newer.
+        // Keep this prototype isolated so the main app retains its API 19 floor.
         minSdk 26
         targetSdk 28
         versionCode 1
@@ -25,5 +25,7 @@ android {
 }
 
 dependencies {
-    implementation 'org.mozilla.geckoview:geckoview:160.0.20261116130455'
+    // This release uses androidx.core 1.16.0 and predates the newer
+    // Media3 dependency that requires compileSdk 36/37.
+    implementation 'org.mozilla.geckoview:geckoview:140.0.20250630155423'
 }
