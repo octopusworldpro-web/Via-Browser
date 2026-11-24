@@ -100,7 +100,14 @@ class MainActivity : Activity() {
     private fun buildShell() {
         root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 6, 14, 6); setBackgroundColor(bg) }
-        top.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(38, 42).apply {
+        top.addView(TextView(this).apply {
+            text = "Ω"
+            textSize = 31f
+            typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setTextColor(accent)
+            includeFontPadding = true
+        }, LinearLayout.LayoutParams(38, 70).apply {
             gravity = Gravity.CENTER
             marginEnd = (8 * resources.displayMetrics.density).toInt()
         })
@@ -269,7 +276,14 @@ class MainActivity : Activity() {
         suppressSuggestions = false
         suggestionPanel.visibility = View.GONE
         val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(18, 20, 18, 20); setBackgroundColor(bg) }
-        page.addView(OmegaMarkView(this, accent), LinearLayout.LayoutParams(76, 68).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        page.addView(TextView(this).apply {
+            text = "Ω"
+            textSize = 62f
+            typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setTextColor(accent)
+            includeFontPadding = true
+        }, LinearLayout.LayoutParams(92, 76).apply { gravity = Gravity.CENTER_HORIZONTAL })
         page.addView(TextView(this).apply {
             text = "OmegA Browser"; textSize = 32f; setTextColor(ink); gravity = Gravity.CENTER
             includeFontPadding = true
