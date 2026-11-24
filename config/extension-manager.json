@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "product": "OmegA Browser",
   "extensionManager": {
-    "enabled": false,
-    "disabledReason": "No safe WebExtension runtime is integrated. Local ZIP/CRX support remains a future source-project task; Chrome Web Store support is intentionally excluded.",
+    "enabled": true,
+    "disabledReason": "Extensions are installed disabled and require explicit user enablement. Only matching top-frame content scripts are executed in the webpage JavaScript context; no Chrome APIs, background workers or isolated world.",
     "defaultEnabled": false,
     "permissionPolicy": "explicit_least_privilege",
     "hostAccessModes": [
@@ -43,23 +43,37 @@
       "requireArchiveLimits": true,
       "requireAtomicUpdates": true
     },
-    "runtimeAdapterRequiredForExecution": true,
+    "runtimeAdapterRequiredForExecution": false,
     "preserveExistingUserscripts": true,
     "noBuiltInExtensionCatalog": true,
     "plannedImportSources": [
       "local_zip",
       "local_crx"
     ],
-    "runtimeAvailable": false,
-    "chromeExtensionExecution": false,
+    "runtimeAvailable": true,
+    "chromeExtensionExecution": true,
     "webStoreInstallEnabled": false,
     "webStoreCompatibility": false,
     "engineStrategy": "retain_android_webview",
-    "implementationTarget": "restricted_isolated_content_script_subset",
+    "implementationTarget": "limited_page_context_content_scripts",
     "fullChromeExtensionCompatibility": false,
     "geckoViewBundled": false,
     "minSdkPreservationTarget": 19,
-    "runtimeAdapterContract": "AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md"
+    "runtimeAdapterContract": "AUDIT/STEP-07-RUNTIME-IMPLEMENTATION.md",
+    "supportedRuntimeFeatures": [
+      "manifest_v2_v3_content_scripts",
+      "http_https_match_patterns",
+      "top_frame_document_idle",
+      "manual_enable_disable"
+    ],
+    "unsupportedRuntimeFeatures": [
+      "chrome_apis",
+      "background_scripts",
+      "mv3_service_workers",
+      "isolated_worlds",
+      "all_frames",
+      "chrome_web_store"
+    ]
   },
   "fbStateUtility": {
     "enabled": false,
