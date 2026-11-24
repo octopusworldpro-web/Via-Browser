@@ -211,8 +211,10 @@ jobs:
           aapt dump badging work/OmegA-Browser.apk | tee work/badging.txt
           grep -F "package: name='com.octopusworldpro.omega.browser'" work/badging.txt
           grep -F "application-label:'OmegA Browser'" work/badging.txt
-          unzip -p work/OmegA-Browser.apk res/values/omega_brand_theme.xml | grep -F "omega_brand_theme"
-          unzip -p work/OmegA-Browser.apk res/values/strings.xml | grep -F "About OmegA Browser"
+          # Apktool compiles XML resources into resources.arsc; verify decoded
+          # source resources before packaging, not raw XML paths inside the APK.
+          grep -F 'name="omega_brand_theme"' work/decoded/res/values/omega_brand_theme.xml
+          grep -F "About OmegA Browser" work/decoded/res/values/strings.xml
           grep -F "versionName='7.4.1-omega'" work/badging.txt
           grep -F "sdkVersion:'19'" work/badging.txt
           grep -F "application-icon-160:" work/badging.txt
