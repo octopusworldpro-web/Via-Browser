@@ -33,7 +33,7 @@ OmegA Browser is a separately installable Android browser customization based on
 |---|---|---|
 | 1 | Base reverse engineering + OmegA identity & branding | **CI/build complete**; device verification pending |
 | 2 | Browser core preservation + custom OmegA UI | Static preservation contract + CI guard implemented; in-app UI/runtime tests blocked by missing Android source project |
-| 3 | Chrome Extension runtime + extension manager | Not implemented; runtime feasibility is a major engineering task |
+| 3 | Chrome Extension runtime + extension manager | Manager architecture exists; runtime remains blocked; safety gate CI added |
 | 4 | ZIP/CRX import, install/update/uninstall + storage/background/messaging | Not implemented |
 | 5 | Browser-exposed Device Identity Manager + C3C FBState Utility | Not implemented |
 | 6 | Full integration, security audit, device tests and release APK | Pending |
@@ -66,6 +66,7 @@ Step 1 consolidates existing work; later steps must reuse these results rather t
 ## Audit records
 
 - [Step 1 — APK audit, reverse engineering and identity/branding completion](AUDIT/STEP-01-APK-AUDIT.md)
+- [Step 3 — Extension runtime implementation gate](AUDIT/STEP-03-EXTENSION-RUNTIME.md)
 - [Step 2 — App identity contract](AUDIT/STEP-02-APP-IDENTITY.md)
 - [Step 3 — Branding integration details](AUDIT/STEP-03-BRANDING-INTEGRATION.md)
 - [Step 4 — Browser core compatibility baseline](AUDIT/STEP-04-BROWSER-CORE-COMPATIBILITY.md)
