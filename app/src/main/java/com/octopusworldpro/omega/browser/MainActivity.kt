@@ -254,6 +254,7 @@ class MainActivity : Activity() {
             Triple("↓", "Downloads", { showDownloads() }), Triple("◉", "C3C FBState", { showFbState() }),
             Triple("f", "Facebook", { loadAddress("https://www.facebook.com/") }),
             Triple("◎", "Instagram", { loadAddress("https://www.instagram.com/") }),
+            Triple("◉", "IG Cookie Check", { showInstagramCookieUtility() }),
             Triple("⌁", "Device Identity", { showIdentity() }), Triple("⚙", "Settings", { showSettings() })
         )
         shortcuts.forEach { item ->
@@ -376,6 +377,43 @@ class MainActivity : Activity() {
                 Toast.makeText(this, "Profile saved for browser session.", Toast.LENGTH_SHORT).show()
             }.setNegativeButton("Cancel", null).show()
     }
+    private fun showInstagramCookieUtility() {
+        val input = EditText(this).apply {
+            hint = "Paste a cookie header to check its format"
+            setSingleLine(false)
+            minLines = 3
+            maxLines = 5
+            textSize = 13f
+            setTextColor(ink)
+            setHintTextColor(Color.GRAY)
+        }
+        AlertDialog.Builder(this).setTitle("Instagram Cookie Check")
+            .setMessage("Paste a cookie header you already have. Values are checked in memory only, masked in the result, and are not saved, copied, uploaded, or applied to a login session.")
+            .setView(input)
+            .setPositiveButton("Validate") { _, _ ->
+                val raw = input.text.toString().trim()
+                try {
+                    if (raw.isBlank()) throw IllegalArgumentException("No cookie header provided")
+                    val pairs = raw.split(";").map { part ->
+                        val pair = part.trim().split("=", limit = 2)
+                        if (pair.size != 2 || pair[0].isBlank() || pair[1].isBlank()) throw IllegalArgumentException("Invalid cookie pair")
+                        pair[0].trim() to pair[1].trim()
+                    }
+                    val names = pairs.map { it.first }.distinct()
+                    val hasSession = names.contains("sessionid")
+                    val hasCsrf = names.contains("csrftoken")
+                    val report = "Cookies found: ${names.size}\n" +
+                        "sessionid: ${if (hasSession) "present (value hidden)" else "missing"}\n" +
+                        "csrftoken: ${if (hasCsrf) "present (value hidden)" else "missing"}\n\n" +
+                        "Cookie names:\n" + names.joinToString("\n")
+                    AlertDialog.Builder(this).setTitle(if (hasSession && hasCsrf) "Cookie format looks valid" else "Required cookies missing")
+                        .setMessage(report).setPositiveButton("OK", null).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, e.message ?: "Invalid cookie header", Toast.LENGTH_LONG).show()
+                }
+            }.setNegativeButton("Cancel", null).show()
+    }
+
     private fun showFbState() {
         val options = if (fbStateContent == null) arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file")
             else arrayOf("Import AppState JSON", "Import Cookie Header", "Import Netscape file", "Export imported data")
