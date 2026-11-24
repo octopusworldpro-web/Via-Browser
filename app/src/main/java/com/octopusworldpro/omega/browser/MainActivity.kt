@@ -47,7 +47,7 @@ class MainActivity : Activity() {
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(14, 12, 14, 8); setBackgroundColor(bg) }
         top.addView(TextView(this).apply { text = "Ω"; textSize = 25f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(38, 48))
         address = EditText(this).apply {
-            hint = "Search or enter address"; textSize = 15f; singleLine = true
+            hint = "Search or enter address"; textSize = 15f; setSingleLine(true)
             setTextColor(ink); setHintTextColor(Color.LTGRAY); setPadding(16, 4, 12, 4)
             setBackgroundColor(panel); imeOptions = EditorInfo.IME_ACTION_GO
             setOnEditorActionListener { _, action, _ ->
@@ -58,7 +58,7 @@ class MainActivity : Activity() {
         top.addView(button("⋮") { showMainMenu() }, LinearLayout.LayoutParams(42, 48))
         root.addView(top)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; if (Build.VERSION.SDK_INT >= 21) progressTintList = android.content.res.ColorStateList.valueOf(accent); visibility = View.GONE
+            max = 100; if (Build.VERSION.SDK_INT >= 21) progressTintList = android.content.res.ColorStateList.valueOf(accent); setVisibility(View.GONE)
         }
         root.addView(progress, LinearLayout.LayoutParams(-1, 3))
         web = WebView(this).apply {
@@ -71,10 +71,10 @@ class MainActivity : Activity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     if (url != null) { currentUrl = url; address.setText(url) }
-                    progress.visibility = View.VISIBLE
+                    progress.setVisibility(View.VISIBLE)
                 }
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    progress.visibility = View.GONE
+                    progress.setVisibility(View.GONE)
                     if (url != null && !url.startsWith("about:")) {
                         currentUrl = url
                         if (history.lastOrNull() != url) history.add(url)
@@ -82,7 +82,7 @@ class MainActivity : Activity() {
                 }
             }
             webChromeClient = object : WebChromeClient() {
-                override fun onProgressChanged(view: WebView?, newProgress: Int) { progress.progress = newProgress }
+                override fun onProgressChanged(view: WebView?, newProgress: Int) { progress.setProgress(newProgress) }
             }
         }
         root.addView(web, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -114,14 +114,14 @@ class MainActivity : Activity() {
     }
 
     private fun showHome() {
-        web.visibility = View.GONE
+        web.setVisibility(View.GONE)
         address.setText("")
         val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(24, 28, 24, 24); setBackgroundColor(bg) }
         page.addView(TextView(this).apply { text = "Ω"; textSize = 64f; setTextColor(accent); gravity = Gravity.CENTER }, LinearLayout.LayoutParams(-1, 88))
         page.addView(TextView(this).apply { text = "OmegA Browser"; textSize = 25f; setTextColor(ink); gravity = Gravity.CENTER })
         page.addView(TextView(this).apply { text = "Fast • Private • Lightweight"; textSize = 13f; setTextColor(Color.LTGRAY); gravity = Gravity.CENTER })
         val search = EditText(this).apply {
-            hint = "Search the web"; singleLine = true; textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
+            hint = "Search the web"; setSingleLine(true); textSize = 16f; setTextColor(ink); setHintTextColor(Color.LTGRAY)
             setPadding(18, 8, 18, 8); setBackgroundColor(panel); imeOptions = EditorInfo.IME_ACTION_GO
             setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_GO) { loadAddress(text.toString()); true } else false }
         }
@@ -157,7 +157,7 @@ class MainActivity : Activity() {
             if (old != null) root.removeViewAt(2)
             root.addView(web, 2, LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        web.visibility = View.VISIBLE
+        web.setVisibility(View.VISIBLE)
     }
 
     private fun showMainMenu() {
