@@ -10,12 +10,17 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    // CI run #15 is the 1.0.0 baseline. Each subsequent install-check build
+    // increments the patch version and Android versionCode by one.
+    def installCheckBuild = (System.getenv('GITHUB_RUN_NUMBER') ?: '15').toInteger()
+    def patchVersion = Math.max(0, installCheckBuild - 15)
+
     defaultConfig {
         applicationId 'com.octopusworldpro.omega.browser'
         minSdk 19
         targetSdk 28
-        versionCode 2026112402
-        versionName '1.0.0-omega-source'
+        versionCode 2026112402 + patchVersion
+        versionName "1.0.${patchVersion}"
     }
     kotlinOptions { jvmTarget = '17' }
 }
