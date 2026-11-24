@@ -1,6 +1,6 @@
 # Roadmap Step 3 — Lightweight Extension Runtime + Extension Manager
 
-**Status: IN PROGRESS — hardened URL/script validation and JVM tests added; Android device verification remains. Full Chrome compatibility is explicitly out of scope.**
+**Status: IMPLEMENTATION COMPLETE — limited WebView content-script runtime and extension manager controls are implemented; final device regression belongs to Step 6. Full Chrome compatibility is explicitly out of scope.**
 
 ## Engine decision
 
@@ -15,6 +15,9 @@ OmegA keeps its existing Android WebView. GeckoView is not included in the appli
 - Supports HTTP/HTTPS URL match patterns, top-frame scripts and JavaScript files up to 1 MiB each.
 - Newly installed extensions start disabled; the user must explicitly enable them in Extensions.
 - Enable/disable and remove controls are wired to the extension manager.
+- Per-extension site access is enforced before injection: blocked by default, one-time current-site access, selected-origin allow-list, or all matching HTTP/HTTPS sites.
+- Site access changes reload the active page; uninstall clears the extension's enable and site-grant preferences.
+- ZIP import rejects duplicate entries and oversized manifests, and preserves an existing install if replacement finalization fails.
 - No native JavaScript bridge is exposed to extension scripts.
 - Main APK CI builds only `:app:assembleDebug`; GeckoView POC is no longer built or uploaded.
 
