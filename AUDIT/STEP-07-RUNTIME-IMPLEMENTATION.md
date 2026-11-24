@@ -1,60 +1,34 @@
-# Step 07 — Runtime Implementation and APK Integration
+# Step 07 — Lightweight Runtime Implementation
 
-**Status: BLOCKED — no buildable Android source project or compatible WebExtension engine is available in this repository.**  
-**Decision date:** 2026-11-24
+**Status: IN PROGRESS — a restricted content-script adapter is integrated; device validation remains pending.**
 
-## Step 06 evidence used
+## Implemented in OmegA
 
-The successful [runtime reconnaissance workflow](https://github.com/octopusworldpro-web/Via-Browser/actions/runs/45332809697) decompiled 4,285 Java source files. Its report found:
+- Existing Android WebView remains the only browser engine.
+- ZIP packages are extracted to app-private storage with traversal and archive limits.
+- Extensions are installed disabled and require explicit user enablement.
+- Manifest V2/V3 `content_scripts` entries can run matching top-frame JavaScript files after page load.
+- URL match patterns are limited to HTTP/HTTPS scheme, host and path wildcards.
+- Individual script files are limited to 1 MiB.
+- No JavaScript-to-native bridge or privileged Chrome API is exposed.
 
-- 9 files matching WebView construction/configuration.
-- 12 files matching JavaScript bridge patterns.
-- 10 files matching the existing userscript subsystem.
-- 6 files matching generic extension package/import patterns.
-- **0 files matching Chrome/WebExtension runtime indicators.**
+## Deliberate limitations
 
-This is static evidence, not proof of runtime behavior. Generic ZIP/manifest handling and WebView service-worker APIs do not provide Chrome extension execution.
+- Scripts run in the page JavaScript world, not an isolated execution world.
+- No `chrome.*` APIs, extension messaging, background pages, MV3 service workers, all-frame injection or Web Store installation.
+- `run_at` timing is not implemented; injection is a document-idle approximation.
+- This is not full Chrome extension compatibility.
 
-## Implementation decision
+Users should enable only extensions from sources they trust. The content script can read and modify the page DOM because it executes in the page context, but it receives no privileged native bridge.
 
-A real extension manager is not useful unless a compatible runtime can execute the extension. Implementing only a manager UI or ZIP/CRX importer would create a misleading feature: packages could appear installed but could not run. Therefore this step does not label imported packages as installed/runnable and does not claim Chrome Web Store compatibility.
+## Build and validation
 
-The repository currently contains a compiled Via APK and audit/build workflows, not the original Android source/Gradle project. The existing APK build workflow can repackage resources and identity, but it does not provide a safe, maintainable path to add a complete extension engine and application UI. Blind DEX patching is rejected because the exact app-specific call sites and runtime behavior have not been verified.
+The normal Android workflow now builds only the main WebView APK. GeckoView has been removed from the Gradle project graph and the standard build/artifact workflow to keep the app lightweight.
 
-## Required implementation components
+Pending:
+1. CI build and test confirmation for the new adapter.
+2. Automated URL matching and path-safety tests.
+3. Android device validation for install/enable/match/disable/remove.
+4. Final APK-size comparison.
 
-A future implementation must provide and test all of the following before Chrome extension support is enabled:
-
-1. Manifest V3 parsing and package validation with traversal, archive-size and decompression-bomb protections.
-2. Isolated content-script execution and deterministic injection at supported navigation phases.
-3. Background service-worker/event lifecycle and extension messaging.
-4. Explicitly scoped `chrome.*` API compatibility, with unsupported APIs reported accurately.
-5. Permission broker for API and host permissions; no ambient access to cookies, passwords, history or private tabs.
-6. Per-extension persistent storage and atomic install/update/rollback/uninstall.
-7. Local ZIP/CRX import and a truthful Web Store handoff policy.
-8. Manager UI wired to the actual runtime adapter.
-9. Regression tests for existing Via browsing, userscripts, downloads, cookies, bookmarks and history.
-10. Install/launch/functional tests on an Android emulator and physical device.
-
-## Current build capability
-
-| Capability | Verified state |
-|---|---|
-| Separate OmegA application identity | CI build passed |
-| OmegA launcher branding | CI build passed |
-| Existing Via browser code retained in repackaged APK | Static build/repack only |
-| Runtime decompilation inventory | CI passed |
-| Extension manager design | Documented only |
-| Chrome extension runtime | Not implemented |
-| ZIP/CRX importer integrated into APK | Not implemented |
-| Chrome Web Store install flow | Not implemented |
-| Device install/launch regression test | Not run |
-| Production signing | Not configured; current artifact uses temporary test key |
-
-## Completion gate
-
-Step 07 can be marked complete only when a buildable implementation exists, CI produces the updated APK, and device/emulator tests prove the manager and supported extension APIs work. Until then, the honest project status is **blocked**, not complete.
-
-## What unblocks this step
-
-The viable next input is a buildable Via Android source/Gradle project (or an independently licensed WebExtension engine plus a maintainable integration project). Without that, this repository can continue static APK/resource repackaging, but cannot responsibly deliver a real Chrome-compatible extension runtime.
+Do not label this a full Chrome/WebExtension runtime.
