@@ -25,13 +25,38 @@ class GeckoPocActivity : Activity() {
     private lateinit var geckoView: GeckoView
     private lateinit var address: EditText
     private lateinit var status: TextView
+    private lateinit var backButton: Button
+    private lateinit var forwardButton: Button
+    private var canGoBack = false
+    private var canGoForward = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val runtime = runtime ?: GeckoRuntime.create(this).also { runtime = it }
+        val activeRuntime = runtime ?: GeckoRuntime.create(this).also { runtime = it }
         session = GeckoSession()
-        session.open(runtime)
+        session.navigationDelegate = object : GeckoSession.NavigationDelegate {
+            override fun onCanGoBack(session: GeckoSession, value: Boolean) {
+                canGoBack = value
+                if (::backButton.isInitialized) backButton.isEnabled = value
+            }
+
+            override fun onCanGoForward(session: GeckoSession, value: Boolean) {
+                canGoForward = value
+                if (::forwardButton.isInitialized) forwardButton.isEnabled = value
+            }
+
+            override fun onLocationChange(
+                session: GeckoSession,
+                url: String?,
+                perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>,
+                hasUserGesture: Boolean
+            ) {
+                if (!url.isNullOrBlank() && ::address.isInitialized) address.setText(url)
+                if (::status.isInitialized) status.text = "GeckoView: " + (url ?: "Loading")
+            }
+        }
+        session.open(activeRuntime)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -44,7 +69,7 @@ class GeckoPocActivity : Activity() {
         }
         address = EditText(this).apply {
             hint = "Search or enter address"
-            singleLine = true
+            setSingleLine(true)
             setTextColor(Color.WHITE)
             setHintTextColor(Color.LTGRAY)
             setBackgroundColor(Color.rgb(35, 29, 54))
@@ -80,18 +105,18 @@ class GeckoPocActivity : Activity() {
             gravity = Gravity.CENTER
             setBackgroundColor(Color.rgb(25, 20, 43))
         }
-        controls.addView(Button(this).apply {
+        backButton = Button(this).apply {
             text = "Back"
-            setOnClickListener {
-                if (session.navigationController.canGoBack()) session.navigationController.goBack()
-            }
-        })
-        controls.addView(Button(this).apply {
+            isEnabled = canGoBack
+            setOnClickListener { if (canGoBack) session.goBack() }
+        }
+        controls.addView(backButton)
+        forwardButton = Button(this).apply {
             text = "Forward"
-            setOnClickListener {
-                if (session.navigationController.canGoForward()) session.navigationController.goForward()
-            }
-        })
+            isEnabled = canGoForward
+            setOnClickListener { if (canGoForward) session.goForward() }
+        }
+        controls.addView(forwardButton)
         controls.addView(Button(this).apply {
             text = "Reload"
             setOnClickListener { session.reload() }
