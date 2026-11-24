@@ -48,6 +48,7 @@ class MainActivity : Activity() {
     private var identityLanguage = ""
     private var identityUserAgent = ""
     private var pendingImport = 0
+    private var searchEngine = "Google"
     private lateinit var prefs: android.content.SharedPreferences
     private var filePathCallback: android.webkit.ValueCallback<Array<Uri>>? = null
 
@@ -210,7 +211,7 @@ class MainActivity : Activity() {
         if (value.isEmpty()) return
         val looksLikeUrl = value.contains(".") && !value.contains(" ")
         if (!value.startsWith("http://") && !value.startsWith("https://")) {
-            value = if (looksLikeUrl) "https://$value" else "https://www.google.com/search?q=" + Uri.encode(value)
+            value = if (looksLikeUrl) "https://$value" else searchUrl(value)
         }
         showBrowser()
         suppressSuggestions = true
@@ -272,7 +273,7 @@ class MainActivity : Activity() {
         val index = root.indexOfChild(web)
         if (index < 0) {
             val contentIndex = root.indexOfChild(progress) + 1
-            if (contentIndex < root.childCount - 1) root.removeViewAt(contentIndex)
+            if (contentIndex < root.childCount) root.removeViewAt(contentIndex)
             root.addView(web, contentIndex, LinearLayout.LayoutParams(-1, 0, 1f))
         }
         web.setVisibility(View.VISIBLE)
@@ -307,17 +308,52 @@ class MainActivity : Activity() {
         try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) }
         catch (_: Exception) { AlertDialog.Builder(this).setTitle("Downloads").setMessage("Open the Android Downloads app to view saved files.").setPositiveButton("OK", null).show() }
     }
+    private fun searchUrl(query: String): String {
+        val encoded = Uri.encode(query)
+        return when (searchEngine) {
+            "Bing" -> "https://www.bing.com/search?q=$encoded"
+            "DuckDuckGo" -> "https://duckduckgo.com/?q=$encoded"
+            else -> "https://www.google.com/search?q=$encoded"
+        }
+    }
+
     private fun showSettings() {
-        val items = arrayOf("Appearance: Dark", "Search engine: Google", "JavaScript: Enabled", "Clear browsing data", "About")
+        val items = arrayOf(
+            "Search engine: $searchEngine",
+            "JavaScript: ${if (web.settings.javaScriptEnabled) "On" else "Off"}",
+            "Desktop site: ${if (web.settings.userAgentString.contains("X-Desktop")) "On" else "Off"}",
+            "Clear browsing data",
+            "About"
+        )
         AlertDialog.Builder(this).setTitle("Settings").setItems(items) { _, which ->
             when (which) {
-                3 -> AlertDialog.Builder(this).setTitle("Clear browsing data?").setMessage("This clears local history and WebView cache.")
-                    .setPositiveButton("Clear") { _, _ -> history.clear(); web.clearCache(true); web.clearHistory() }.setNegativeButton("Cancel", null).show()
+                0 -> AlertDialog.Builder(this).setTitle("Search engine")
+                    .setItems(arrayOf("Google", "Bing", "DuckDuckGo")) { _, choice ->
+                        searchEngine = arrayOf("Google", "Bing", "DuckDuckGo")[choice]
+                        persistSavedData()
+                        Toast.makeText(this, "Search engine: $searchEngine", Toast.LENGTH_SHORT).show()
+                    }.show()
+                1 -> { web.settings.javaScriptEnabled = !web.settings.javaScriptEnabled; showSettings() }
+                2 -> {
+                    val ua = web.settings.userAgentString
+                    web.settings.userAgentString = if (ua.contains("X-Desktop")) ua.replace("X-Desktop", "Mobile") else ua.replace("Mobile", "X-Desktop")
+                    web.reload()
+                    showSettings()
+                }
+                3 -> AlertDialog.Builder(this).setTitle("Clear browsing data?")
+                    .setMessage("Clear local history, bookmarks, cookies and cached website files?")
+                    .setPositiveButton("Clear") { _, _ ->
+                        history.clear(); bookmarks.clear(); persistSavedData()
+                        web.clearCache(true); web.clearHistory()
+                        android.webkit.CookieManager.getInstance().removeAllCookies(null)
+                        android.webkit.CookieManager.getInstance().flush()
+                        Toast.makeText(this, "Browsing data cleared", Toast.LENGTH_SHORT).show()
+                    }.setNegativeButton("Cancel", null).show()
                 4 -> showAbout()
-                else -> Toast.makeText(this, "Setting control will be expanded in the next pass.", Toast.LENGTH_SHORT).show()
             }
         }.setNegativeButton("Done", null).show()
     }
+
     private fun showIdentity() {
         val fields = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 0) }
         val ua = EditText(this).apply { hint = "Custom User-Agent (optional)"; setText(identityUserAgent) }
@@ -381,6 +417,7 @@ class MainActivity : Activity() {
         history.addAll(readList("history"))
         identityUserAgent = prefs.getString("identity_ua", "") ?: ""
         identityLanguage = prefs.getString("identity_lang", "") ?: ""
+        searchEngine = prefs.getString("search_engine", "Google") ?: "Google"
     }
 
     private fun persistSavedData() {
@@ -389,6 +426,7 @@ class MainActivity : Activity() {
             .putString("history", JSONArray(history.distinct().takeLast(500)).toString())
             .putString("identity_ua", identityUserAgent)
             .putString("identity_lang", identityLanguage)
+            .putString("search_engine", searchEngine)
             .apply()
     }
 
