@@ -113,7 +113,7 @@ jobs:
           colors = ET.parse(root / 'colors.xml').getroot()
           styles = ET.parse(root / 'styles.xml').getroot()
           values = {node.attrib.get('name'): (node.text or '').strip() for node in colors.findall('color')}
-          expected = {'omega_violet': '#A855F7', 'omega_magenta': '#D946EF', 'omega_deep_violet': '#100B2B', 'omega_near_black': '#090817'}
+          expected = {'omega_brand_violet': '#A855F7', 'omega_brand_magenta': '#D946EF', 'omega_deep_violet': '#100B2B', 'omega_night': '#090817'}
           for key, value in expected.items():
               assert values.get(key, '').lower() == value.lower(), f'Missing or changed brand token: {key}'
           assert styles.findall('style'), 'No OmegA style resources found'
