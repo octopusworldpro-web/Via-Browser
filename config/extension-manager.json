@@ -64,7 +64,11 @@
       "manifest_v2_v3_content_scripts",
       "http_https_match_patterns",
       "top_frame_document_idle",
-      "manual_enable_disable"
+      "manual_enable_disable",
+      "per_extension_site_access_blocked_by_default",
+      "one_time_current_site_grant",
+      "selected_origin_allow_list",
+      "all_matching_http_https_sites"
     ],
     "unsupportedRuntimeFeatures": [
       "chrome_apis",
