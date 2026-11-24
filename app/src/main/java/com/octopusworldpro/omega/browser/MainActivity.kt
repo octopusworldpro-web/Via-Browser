@@ -160,7 +160,8 @@ class MainActivity : Activity() {
                     }
                 }
             }
-            if (identityUserAgent.isNotEmpty()) settings.userAgentString = identityUserAgent\n            if (desktopMode) settings.userAgentString = desktopUserAgent()
+            if (identityUserAgent.isNotEmpty()) settings.userAgentString = identityUserAgent
+            if (desktopMode) settings.userAgentString = desktopUserAgent()
             settings.allowFileAccess = false
             settings.allowContentAccess = true
             if (Build.VERSION.SDK_INT >= 16) {
@@ -758,7 +759,9 @@ class MainActivity : Activity() {
         tabs.addAll(readList("tabs").take(19))
         identityUserAgent = prefs.getString("identity_ua", "") ?: ""
         identityLanguage = prefs.getString("identity_lang", "") ?: ""
-        searchEngine = prefs.getString("search_engine", "Google") ?: "Google"\n        javascriptEnabled = prefs.getBoolean("javascript_enabled", true)\n        desktopMode = prefs.getBoolean("desktop_mode", false)
+        searchEngine = prefs.getString("search_engine", "Google") ?: "Google"
+        javascriptEnabled = prefs.getBoolean("javascript_enabled", true)
+        desktopMode = prefs.getBoolean("desktop_mode", false)
     }
 
     private fun persistSavedData() {
@@ -768,7 +771,9 @@ class MainActivity : Activity() {
             .putString("tabs", JSONArray(tabs.takeLast(19)).toString())
             .putString("identity_ua", identityUserAgent)
             .putString("identity_lang", identityLanguage)
-            .putString("search_engine", searchEngine)\n            .putBoolean("javascript_enabled", javascriptEnabled)\n            .putBoolean("desktop_mode", desktopMode)
+            .putString("search_engine", searchEngine)
+            .putBoolean("javascript_enabled", javascriptEnabled)
+            .putBoolean("desktop_mode", desktopMode)
             .apply()
     }
 
