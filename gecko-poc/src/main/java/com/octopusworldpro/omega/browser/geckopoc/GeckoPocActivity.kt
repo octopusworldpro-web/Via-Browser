@@ -13,6 +13,7 @@ import android.widget.TextView
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
+import org.mozilla.geckoview.WebExtension
 
 /**
  * Isolated GeckoView proof-of-concept.
@@ -123,6 +124,28 @@ class GeckoPocActivity : Activity() {
         })
         root.addView(controls)
         setContentView(root)
+        installBundledExtension(activeRuntime)
+    }
+
+    private fun installBundledExtension(activeRuntime: GeckoRuntime) {
+        status.text = "Installing bundled WebExtension test…"
+        activeRuntime.webExtensionController
+            .ensureBuiltIn(
+                "resource://android/assets/omega_poc_extension/",
+                "omega-gecko-poc@example.invalid"
+            )
+            .accept(
+                { extension: WebExtension ->
+                    runOnUiThread {
+                        status.text = "WebExtension ready: " + extension.metaData.name
+                    }
+                },
+                { error: Throwable ->
+                    runOnUiThread {
+                        status.text = "WebExtension install failed: " + (error.message ?: "Unknown error")
+                    }
+                }
+            )
     }
 
     private fun navigate(raw: String) {
