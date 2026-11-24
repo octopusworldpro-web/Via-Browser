@@ -58,7 +58,9 @@ private class OmegaMarkView(context: Context, private val markColor: Int) : View
     }
 }
 
-private data class SheetAction(val icon: String, val title: String, val subtitle: String, val action: () -> Unit)\n\nclass MainActivity : Activity() {
+private data class SheetAction(val icon: String, val title: String, val subtitle: String, val action: () -> Unit)
+
+class MainActivity : Activity() {
     private val bg = Color.rgb(9, 8, 23)
     private val panel = Color.rgb(25, 20, 43)
     private val accent = Color.rgb(168, 85, 247)
