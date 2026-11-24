@@ -6,6 +6,10 @@ plugins {
 android {
     namespace 'com.octopusworldpro.omega.browser'
     compileSdk 35
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     defaultConfig {
         applicationId 'com.octopusworldpro.omega.browser'
         minSdk 19
@@ -13,4 +17,5 @@ android {
         versionCode 2026112402
         versionName '1.0.0-omega-source'
     }
+    kotlinOptions { jvmTarget = '17' }
 }
