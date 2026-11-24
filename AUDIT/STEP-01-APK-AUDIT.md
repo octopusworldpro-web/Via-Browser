@@ -98,3 +98,30 @@ The APK has meaningful **userscript-manager** evidence, but this audit did not f
 3. Design full extension/CRX support as a distinct compatibility layer, with explicit testing.
 4. Keep Device Identity Manager limited to browser-exposed identity values; do not attempt to alter hardware IMEI or other protected device identifiers.
 5. Use a new OmegA application ID and signing key, then validate install/launch independently.
+
+
+## 9. Additional verification pass (2026-11-24)
+
+### Archive and signature verification
+
+- Re-ran the ZIP integrity test against the supplied APK: all 360 archive entries passed; no ZIP structural errors were reported.
+- Recomputed SHA-256 and confirmed it matches the artifact fingerprint recorded above.
+- Ran JDK jarsigner verification. The archive contains a v1 JAR signature, but the installed JDK rejects SHA-1 under its current disabled-algorithm policy and reports the APK as unsigned for trust purposes.
+- The signature report also lists many APK entries as not covered by the JAR signature. The v1 signature check is therefore not a reliable integrity/authenticity guarantee for the whole APK. This is a release risk, not proof of malicious modification.
+- The signer certificate is self-signed; no trusted publisher chain was established by this check.
+
+### Repository artifact comparison
+
+The directly supplied APK in the current working session matches the recorded artifact fingerprint: 5764435e66cdfa71bd18e01df6c794b7e1ba64a13ba147a4a216d9f245e8acc8. The archive contains 360 entries and passes the ZIP integrity test.
+
+### Toolchain availability check
+
+The current working environment has Java, keytool and jarsigner, but does not have jadx, apktool, aapt, aapt2, apksigner, zipalign, baksmali or an Android SDK build platform installed. Python packages for Androguard/APK parsing are also absent. No Android emulator/device bridge is exposed in this environment.
+
+This pass could independently verify the archive and inspect packaged files, but could not produce a trustworthy Java/Kotlin decompilation, decode the binary Android manifest/resource table with Android tooling, rebuild the APK, or run it on a device. Attempting binary patching without those tools would risk corrupting the base browser.
+
+## 10. Final Step 01 disposition
+
+**Static artifact audit: complete.** The supplied APK's identity, archive integrity, signing metadata and signature weakness, manifest inventory, component inventory, DEX inventory, feature indicators, extension/userscript distinction and rebuild risks are recorded.
+
+**Source reconstruction / dynamic analysis: blocked, not silently marked complete.** This is a separate technical subtask requiring a compatible decompiler/APK toolchain and Android runtime. It cannot be honestly completed in the current environment. The next implementation work must first provision those tools or obtain the original Via Android source project, then validate decompilation and runtime behavior before modifying the browser core.
