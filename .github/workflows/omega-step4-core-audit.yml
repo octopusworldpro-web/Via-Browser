@@ -1,0 +1,124 @@
+name: OmegA Browser — Step 4 Core Preservation Audit
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk'
+      - '.github/workflows/omega-step4-core-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  core-preservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout base APK and audit files
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v3
+
+      - name: Install APK inspection tools
+        run: |
+          sdkmanager "build-tools;36.0.0"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
+          curl -fsSL -o /usr/local/bin/apktool https://raw.githubusercontent.com/iBotPeaches/Apktool/v2.11.1/scripts/linux/apktool
+          curl -fsSL -o /usr/local/bin/apktool.jar https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar
+          chmod +x /usr/local/bin/apktool
+          apktool --version
+
+      - name: Verify base APK integrity and fingerprint
+        run: |
+          python3 - <<'PY'
+          import hashlib, zipfile
+          from pathlib import Path
+          apk = Path("Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk")
+          expected = "5764435e66cdfa71bd18e01df6c794b7e1ba64a13ba147a4a216d9f245e8acc8"
+          actual = hashlib.sha256(apk.read_bytes()).hexdigest()
+          assert actual == expected, f"Unexpected base APK SHA-256: {actual}"
+          with zipfile.ZipFile(apk) as z:
+              bad = z.testzip()
+              assert bad is None, f"Corrupt archive entry: {bad}"
+              names = set(z.namelist())
+              assert "classes.dex" in names
+              assert "AndroidManifest.xml" in names
+          print(f"PASS: SHA-256 {actual}; APK archive valid")
+          PY
+
+      - name: Decode manifest and resources
+        run: apktool d -f "Via+Browser+-+Fast+&+Light_7.4.1_APKPure.apk" -o work/base
+
+      - name: Check browser-core preservation markers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path("work/base")
+          dex_files = list(root.glob("classes*.dex"))
+          assert dex_files, "No DEX files found after decode"
+          dex = b"".join(p.read_bytes() for p in dex_files)
+          assets = root / "assets"
+          asset_text = b""
+          if assets.exists():
+              for p in assets.rglob("*"):
+                  if p.is_file():
+                      try:
+                          asset_text += p.read_bytes() + b"\\n"
+                      except OSError:
+                          pass
+          haystack = dex + asset_text
+          checks = {
+              "WebView browser stack": [b"WebView", b"WebViewClient", b"WebChromeClient"],
+              "Cookie/session handling": [b"CookieManager"],
+              "Download handling": [b"DownloadManager"],
+              "History/bookmark support": [b"WebHistoryItem", b"bookmark"],
+              "Incognito mode marker": [b"incognito"],
+              "Reader mode assets": [b"reader"],
+              "Userscript API preservation": [b"GM_getValue", b"GM_setValue", b"GM_xmlhttpRequest"],
+          }
+          failed = []
+          for label, needles in checks.items():
+              missing = [n.decode("ascii") for n in needles if n.lower() not in haystack.lower()]
+              status = "PASS" if not missing else "FAIL"
+              print(f"{status}: {label}" + (f" (missing: {', '.join(missing)})" if missing else ""))
+              if missing:
+                  failed.append(label)
+          assert not failed, "Core preservation markers missing: " + ", ".join(failed)
+          print("NOTE: marker presence is static evidence only; it does not prove runtime behavior.")
+          PY
+
+      - name: Verify Android compatibility floor and original app namespace
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          p = Path("work/base/AndroidManifest.xml")
+          root = ET.parse(p).getroot()
+          android = "{http://schemas.android.com/apk/res/android}"
+          sdk = root.find("uses-sdk")
+          assert sdk is not None, "uses-sdk element missing"
+          minimum = sdk.attrib.get(android + "minSdkVersion")
+          assert minimum == "19", f"Expected minSdk 19, got {minimum}"
+          assert root.attrib.get("package") == "mark.via.gp", "Unexpected base package"
+          print("PASS: base package mark.via.gp; minSdkVersion 19")
+          PY
+
+      - name: Upload static audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmegA-Browser-step4-core-audit
+          path: |
+            work/base/AndroidManifest.xml
+            AUDIT/STEP-04-BROWSER-CORE-COMPATIBILITY.md
+          if-no-files-found: warn
+          retention-days: 7
