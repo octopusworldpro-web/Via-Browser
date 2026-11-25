@@ -137,15 +137,14 @@ internal object ExtensionInstaller {
                     segments.take(index + 1).joinToString("/").lowercase()
                 }
                 if (entry.isDirectory) {
-                    require(key !in files && files.none { it.startsWith("$key/") }) {
+                    require(key !in files && ancestors.none { it in files }) {
                         "ZIP contains conflicting file paths"
                     }
                     directories += key
                     require(target.mkdirs() || target.isDirectory) { "Could not create ZIP directory" }
                 } else {
                     require(key !in directories && ancestors.none { it in files } &&
-                        files.none { it.startsWith("$key/") } &&
-                        directories.none { key.startsWith("$it/") && it in files }) {
+                        files.none { it.startsWith("$key/") }) {
                         "ZIP contains conflicting file paths"
                     }
                     files += key
