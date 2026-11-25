@@ -1,68 +1,79 @@
-# Step 08 — Extension Engine Compatibility Decision
+# Step 08 — Chrome Extension Engine Decision
 
-**Status: IN PROGRESS — compatibility research completed; engine choice is a blocking product decision.**
+**Status: IN PROGRESS — target confirmed; Chromium engine integration remains.**
 
-## User-facing target
+## Confirmed product requirement
 
-The requested behavior is comparable to Kiwi/Lemur:
-- install locally supplied extensions,
-- show extension toolbar entries and open extension popup UI,
-- run content scripts and background logic,
-- expose extension APIs and messaging,
-- manage enable/disable, remove, permissions and per-site access.
+The user confirmed: **Chrome-compatible extensions only**. Firefox `.xpi` / GeckoView support is out of scope.
 
-The current app is an Android WebView browser. Its existing ZIP importer and `LightweightExtensionRuntime` are not a Chrome/WebExtension runtime.
+Expected behavior:
+- import a local Chrome extension package (ZIP; `.crx` where its signature/package format can be validated),
+- install and persist it,
+- display its toolbar/menu entry and open its real popup,
+- run content scripts in an isolated extension world,
+- support background/event execution and extension messaging,
+- enforce declared API/host permissions,
+- enable, disable, update and remove extensions.
 
-## Engine research
+The goal is a practical Kiwi-style Chrome extension experience, not merely extracting ZIP files and injecting scripts.
 
-### GeckoView
+## Engine decision
 
-Mozilla's current GeckoView API provides a real WebExtension controller with install, list, enable, disable and uninstall operations. It provides isolated content-script execution and extension messaging. This is materially better than the current WebView adapter.
+**Choose a Chromium-based browser engine with a real Chromium extension subsystem. Do not use GeckoView.**
 
-However, GeckoView is **not a drop-in Chromium extension engine**:
-- It implements Firefox's WebExtensions platform, not Chromium's complete extension API surface.
-- GeckoView's ordinary `install(uri)` flow validates Mozilla signatures; arbitrary unsigned ZIP folders are not equivalent to installable add-ons.
-- The documented `installBuiltIn` flow is for extensions bundled in the APK under `resource://android/`, not a general user ZIP installer.
-- Firefox for Android currently documents important MV3 limitations; notably background service workers are unsupported and event pages are the alternative.
-- Chrome Web Store extensions may depend on Chromium-specific APIs and cannot be promised to work unchanged.
+Reasons:
+- Android System WebView does not expose Chrome's extension subsystem or `chrome.*` API runtime.
+- GeckoView implements Firefox WebExtensions, not Chromium's complete extension API surface.
+- A ZIP importer plus JavaScript injection cannot provide Chrome extension semantics.
+- Chromium's own platform documentation identifies Android WebView as a separate embedder; it is not the full Chrome browser embedder.
 
-Sources:
-- https://firefox-source-docs.mozilla.org/mobile/android/geckoview/consumer/web-extensions.html
-- https://mozilla.github.io/geckoview/javadoc/mozilla-central/org/mozilla/geckoview/WebExtensionController.html
-- https://mozilla.github.io/geckoview/consumer/docs/geckoview-quick-start
-- https://extensionworkshop.com/documentation/develop/developing-extensions-for-firefox-for-android/
+## Reference implementations researched
 
-### Chromium / Kiwi-style target
+### Kiwi Browser source
+- https://github.com/kiwibrowser/src
+- Kiwi's source repository documents Android Chromium with Chrome extension support.
+- The repository is archived/read-only since January 23, 2025, so it is a reference for implementation and patches, not an assumed actively maintained upstream.
 
-For high compatibility with Chrome Web Store packages and Chromium `chrome.*` APIs, the engine needs a Chromium-based implementation with an extension subsystem (as Kiwi maintains). Android System WebView does not provide this subsystem. This is a substantial browser-engine integration/fork project, not a ZIP-importer or UI-only change.
+### Elixir Browser
+- https://github.com/SF-FLAM/ElixirBrowser
+- Its README describes an Android Chromium fork with desktop Chrome Web Store extension support.
+- The repository README currently says the source code is not yet published. It cannot be treated as an available source dependency.
 
-## Current code facts
+### Chromium platform documentation
+- https://chromium.googlesource.com/chromium/src/+/HEAD/docs/supported_platforms.md
+- Android WebView is a distinct Chromium embedder; it does not mean WebView provides Chrome browser extension functionality.
+
+## Current app constraints
 
 - `MainActivity` is tightly coupled to `android.webkit.WebView` for navigation, history, downloads, file chooser, settings, page lifecycle and tabs.
 - `LightweightExtensionRuntime` injects scripts in the page JavaScript world and does not implement isolated worlds, extension background execution, extension messaging or `chrome.*` APIs.
-- The existing ZIP importer stores unpacked folders under app-private `filesDir/extensions`; those folders cannot simply be passed to GeckoView's public `installBuiltIn` API.
-- `app/build.gradle` currently has `minSdk 19`. GeckoView's documented integration uses Java 17 and a separate Mozilla Maven repository; the app's current minimum Android version and APK size would need a deliberate compatibility review before migration.
+- The current ZIP importer stores unpacked folders under app-private `filesDir/extensions`; this is not a functioning Chrome extension runtime.
+- The app currently declares `minSdk 19`. A Chromium-based engine integration will require reviewing supported Android versions, ABIs, APK size, native build toolchain and update strategy.
+- Existing browser features must be preserved during migration; replacing WebView is not a drop-in change.
 
-## Decision gate
+## Implementation direction
 
-Do not silently replace WebView with GeckoView and then advertise Kiwi-level Chrome compatibility. That would change the extension ecosystem and still leave key Chrome MV3 behavior unsupported.
+1. Inventory the Chromium extension-related code and build requirements from available open-source Android Chromium references; verify license and maintenance status before reuse.
+2. Establish a buildable Chromium-based engine strategy for this app and supported Android devices. Do not introduce a fake WebView compatibility layer and label it Chrome support.
+3. Define a narrow native browser-engine adapter so tabs/navigation/downloads/file chooser can migrate without discarding the existing OmegA UI and browser features.
+4. Replace the lightweight injector with the engine's actual extension service.
+5. Add local ZIP import first; validate manifest, archive paths, package limits and permissions. Support `.crx` only through a correctly validated CRX installer, not by renaming/extracting it as ZIP.
+6. Add extension list, toolbar/menu, popup, permissions, enable/disable and remove flows.
+7. Add automated tests with representative MV2 and MV3 extensions, then test on a physical Android device.
 
-Before selecting an engine, the product requirement must be one of:
+## Acceptance criteria
 
-1. **Chrome extension compatibility is mandatory:** pursue a Chromium-based engine/fork with an extension subsystem. This is the path aligned with Kiwi/Lemur expectations, but has substantially greater integration and maintenance cost.
-2. **Firefox WebExtensions are acceptable:** evaluate GeckoView as a separate browser-engine migration, with Mozilla-signed installation constraints and Android API limitations clearly surfaced.
+- Engine builds for the declared Android ABIs and minimum Android version.
+- Local Chrome extension ZIP installs and persists across app restarts.
+- Invalid, unsupported or unsafe packages fail with a clear error.
+- A real extension popup opens from the extension menu.
+- Content scripts execute in isolated worlds and respect match patterns/run-at rules.
+- Supported background/event lifecycle and extension messaging work.
+- API and host permissions are surfaced and enforced.
+- Enable/disable/remove persist correctly.
+- Existing tabs, navigation, downloads, file chooser, cookies, history, bookmarks, desktop mode, search and settings pass regression tests.
+- CI build and automated tests pass; physical-device validation is completed.
 
-## Acceptance criteria after engine selection
+**Scope note:** “Any Chrome extension” cannot be guaranteed: extensions may rely on desktop-only APIs, unsupported permissions, native messaging or platform-specific capabilities. The app will target broad Chromium extension compatibility and report unsupported requirements clearly.
 
-- Engine builds for supported Android ABIs and minimum Android version.
-- Real extension package install succeeds or reports a specific signature/compatibility error.
-- Popup action opens the extension's actual popup document.
-- Content scripts run in isolated worlds.
-- Background/event lifecycle and extension messaging work.
-- API and host permissions are prompted and enforced.
-- Enable/disable/remove persist across app restarts.
-- Tabs, downloads, file chooser, cookies, history, bookmarks, desktop mode, navigation and search regressions are tested.
-- APK size and startup/memory impact are measured.
-- CI build and automated tests pass; then validate on a physical Android device.
-
-**No full extension compatibility is claimed by this research step.**
+**No full Chrome extension compatibility is claimed until the engine and acceptance tests above are implemented.**
