@@ -83,9 +83,7 @@ internal object ExtensionPopupHost {
                             } else "<html><head><script>$bootstrap</script></head><body>$html</body></html>"
                             bytes = injected.toByteArray(Charsets.UTF_8)
                         }
-                        WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes)).apply {
-                            responseHeaders = mapOf("Access-Control-Allow-Origin" to "$HOST/$id")
-                        }
+                        WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
                     } catch (_: Exception) { blocked() }
                 }
             }
@@ -167,7 +165,6 @@ internal object ExtensionPopupHost {
             val all = prefs.all
             if (keysJson.isNullOrBlank() || keysJson == "null") return JSONObject(all).toString()
             return try {
-                val keys = JSONObject(keysJson)
                 val result = JSONObject()
                 when {
                     keysJson.startsWith("[") -> {
@@ -178,6 +175,7 @@ internal object ExtensionPopupHost {
                         }
                     }
                     else -> {
+                        val keys = JSONObject(keysJson)
                         val iterator = keys.keys()
                         while (iterator.hasNext()) {
                             val key = iterator.next()
@@ -248,5 +246,5 @@ internal object ExtensionPopupHost {
         else -> "application/octet-stream"
     }
 
-    private fun blocked() = WebResourceResponse("text/plain", "UTF-8", 403, "Blocked", emptyMap(), ByteArrayInputStream(ByteArray(0)))
+    private fun blocked() = WebResourceResponse("text/plain", "UTF-8", ByteArrayInputStream(ByteArray(0)))
 }
