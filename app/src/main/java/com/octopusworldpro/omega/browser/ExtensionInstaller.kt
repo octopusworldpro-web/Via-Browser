@@ -131,14 +131,24 @@ internal object ExtensionInstaller {
                     "ZIP path escapes installation directory"
                 }
 
+                // ZIP entries may arrive in any order. Reject file/directory collisions
+                // against both previously seen entries and implicit parent directories.
+                val ancestors = segments.dropLast(1).indices.map { index ->
+                    segments.take(index + 1).joinToString("/").lowercase()
+                }
                 if (entry.isDirectory) {
+                    require(key !in files && files.none { it.startsWith("$key/") }) {
+                        "ZIP contains conflicting file paths"
+                    }
                     directories += key
                     require(target.mkdirs() || target.isDirectory) { "Could not create ZIP directory" }
                 } else {
-                    files += key
-                    require(files.none { it.startsWith("$key/") } && directories.none { key.startsWith("$it/") }) {
+                    require(key !in directories && ancestors.none { it in files } &&
+                        files.none { it.startsWith("$key/") } &&
+                        directories.none { key.startsWith("$it/") && it in files }) {
                         "ZIP contains conflicting file paths"
                     }
+                    files += key
                     target.parentFile?.let { require(it.mkdirs() || it.isDirectory) { "Could not create ZIP directory" } }
                     var fileBytes = 0L
                     target.outputStream().buffered().use { output ->
