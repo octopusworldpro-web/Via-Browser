@@ -29,3 +29,19 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20240303'
 }
+
+import java.util.Base64
+
+// Generate a legacy launcher PNG so the icon also works on minSdk 19 devices.
+def generatedLauncherIcon = layout.buildDirectory.file("generated/omega-icon/mipmap-mdpi/ic_launcher.png")
+tasks.register("generateOmegaLauncherIcon") {
+    outputs.file(generatedLauncherIcon)
+    doLast {
+        def output = generatedLauncherIcon.get().asFile
+        output.parentFile.mkdirs()
+        def encoded = file("src/main/launcher/ic_launcher.png.b64").text.trim()
+        output.bytes = Base64.decoder.decode(encoded)
+    }
+}
+android.sourceSets.main.res.srcDir(layout.buildDirectory.dir("generated/omega-icon"))
+tasks.named("preBuild").configure { dependsOn("generateOmegaLauncherIcon") }
