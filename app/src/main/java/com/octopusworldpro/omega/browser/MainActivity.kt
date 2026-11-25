@@ -808,7 +808,7 @@ class MainActivity : Activity() {
                                         val dataDir = File(filesDir, "extension-data/${dir.name}")
                                         dataDir.deleteRecursively()
                                         // Popup storage is isolated in its own preferences file per extension.
-                                        getSharedPreferences("omega_extension_${dir.name}", Context.MODE_PRIVATE)
+                                        getSharedPreferences("omega_extension_storage_${dir.name}", Context.MODE_PRIVATE)
                                             .edit().clear().apply()
                                     }
                                 }
