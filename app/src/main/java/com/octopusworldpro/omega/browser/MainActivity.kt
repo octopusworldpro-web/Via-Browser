@@ -691,18 +691,59 @@ class MainActivity : Activity() {
         val base = File(filesDir, "extensions")
         if (!base.exists()) base.mkdirs()
         val installed = base.listFiles()?.filter { it.isDirectory && File(it, "manifest.json").isFile } ?: emptyList()
-        val actions = arrayOf("Install extension from ZIP", "Manage installed extensions (${installed.size})")
+        val actions = arrayOf("Install extension from ZIP", "Manage installed extensions (${installed.size})", "Open extension popup")
         AlertDialog.Builder(this).setTitle("Extension Manager")
             .setItems(actions) { _, which ->
-                if (which == 0) {
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = "application/zip"
-                        putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+                when (which) {
+                    0 -> {
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "application/zip"
+                            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+                        }
+                        startActivityForResult(intent, REQUEST_EXTENSION_ZIP)
                     }
-                    startActivityForResult(intent, REQUEST_EXTENSION_ZIP)
-                } else showInstalledExtensions(installed)
+                    1 -> showInstalledExtensions(installed)
+                    2 -> showExtensionPopupPicker(installed)
+                }
             }.setNegativeButton("Close", null).show()
+    }
+
+    private fun showExtensionPopupPicker(installed: List<File>) {
+        val popupExtensions = installed.filter { directory ->
+            runCatching {
+                val manifest = org.json.JSONObject(File(directory, "manifest.json").readText())
+                val action = manifest.optJSONObject("action") ?: manifest.optJSONObject("browser_action")
+                val popup = action?.optString("default_popup").orEmpty()
+                popup.isNotBlank() && File(directory, popup).canonicalFile.path.startsWith(directory.canonicalFile.path + File.separator) &&
+                    File(directory, popup).isFile
+            }.getOrDefault(false)
+        }
+        if (popupExtensions.isEmpty()) {
+            AlertDialog.Builder(this).setTitle("Extension popups")
+                .setMessage("No installed extension has a popup page.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        AlertDialog.Builder(this).setTitle("Open extension popup")
+            .setItems(popupExtensions.map { it.name }.toTypedArray()) { _, index ->
+                val selected = popupExtensions[index]
+                ExtensionPopupHost.show(this, selected) { callback, params ->
+                    filePathCallback?.onReceiveValue(null)
+                    filePathCallback = callback
+                    try {
+                        startActivityForResult(
+                            params?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" },
+                            REQUEST_FILE
+                        )
+                        true
+                    } catch (_: Exception) {
+                        filePathCallback = null
+                        callback.onReceiveValue(null)
+                        false
+                    }
+                }
+            }.setNegativeButton("Cancel", null).show()
     }
 
     private fun showInstalledExtensions(installed: List<File>) {
