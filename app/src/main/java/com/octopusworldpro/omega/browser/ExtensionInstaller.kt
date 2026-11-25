@@ -204,8 +204,11 @@ internal object ExtensionInstaller {
             }
         }
 
-        val icons = manifest.optJSONObject("icons")
-        if (icons != null) {
+        val iconObjects = listOfNotNull(
+            manifest.optJSONObject("icons"),
+            action?.optJSONObject("default_icon")
+        )
+        iconObjects.forEach { icons ->
             val keys = icons.keys()
             while (keys.hasNext()) requireFile(icons.getString(keys.next()), "Icon")
         }
@@ -236,6 +239,7 @@ internal object ExtensionInstaller {
     private fun stableId(name: String, key: String): String {
         val normalized = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').take(36).ifBlank { "extension" }
         val seed = if (key.isNotBlank()) key else name.lowercase()
+        if (key.isBlank()) return normalized
         val suffix = MessageDigest.getInstance("SHA-256").digest(seed.toByteArray()).take(5)
             .joinToString("") { "%02x".format(it) }
         return "$normalized-$suffix"
