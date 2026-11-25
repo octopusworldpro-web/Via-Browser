@@ -756,7 +756,7 @@ class MainActivity : Activity() {
         val summaries = installed.map { dir -> runCatching { ExtensionManagerPolicy.inspect(dir) }.getOrNull() }
         val labels = installed.mapIndexed { index, dir ->
             val info = summaries[index]
-            if (info == null) "${dir.name} • Error" else "${info.name} • v${info.version} • ${if (info.compatible) "Partial runtime" else "Incompatible"}"
+            if (info == null) "${dir.name} • Error" else "${info.name} • v${info.version} • ${if (prefs.getBoolean(LightweightExtensionRuntime.enabledKey(dir.name), false)) "Enabled" else "Disabled"} • ${if (info.compatible) "Partial runtime" else "Incompatible"}"
         }.toTypedArray()
         AlertDialog.Builder(this).setTitle("Installed extensions")
             .setItems(labels) { _, which ->
@@ -769,7 +769,7 @@ class MainActivity : Activity() {
                 val hostPatterns = info?.hostPatterns?.joinToString("\n") ?: "None"
                 val status = if (info == null) "Error: package metadata could not be read" else if (info.compatible) "Partial: top-frame page-context content scripts only" else "Incompatible: ${info.incompatibility}"
                 val detailText = buildString {
-                    append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nDescription: ${info?.description?.ifBlank { "Not provided" } ?: "Not provided"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
+                    append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nState: ${if (enabled) "Enabled" else "Disabled"}\nDescription: ${info?.description?.ifBlank { "Not provided" } ?: "Not provided"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
                     append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (package): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
                 }
                 val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
@@ -807,6 +807,9 @@ class MainActivity : Activity() {
                                     4 -> {
                                         val dataDir = File(filesDir, "extension-data/${dir.name}")
                                         dataDir.deleteRecursively()
+                                        // Popup storage is isolated in its own preferences file per extension.
+                                        getSharedPreferences("omega_extension_${dir.name}", Context.MODE_PRIVATE)
+                                            .edit().clear().apply()
                                     }
                                 }
                                 edit.apply()
