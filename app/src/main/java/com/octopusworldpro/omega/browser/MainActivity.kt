@@ -778,104 +778,61 @@ class MainActivity : Activity() {
 
     private fun installExtensionZip(uri: Uri) {
         val base = File(filesDir, "extensions")
-        if (!base.exists()) base.mkdirs()
-        val staging = File(base, "install-${System.currentTimeMillis()}")
+        var prepared: PreparedExtension? = null
         try {
-            staging.mkdirs()
-            var totalBytes = 0L
-            var fileCount = 0
-            val seenEntries = mutableSetOf<String>()
-            contentResolver.openInputStream(uri)?.use { input ->
-                java.util.zip.ZipInputStream(java.io.BufferedInputStream(input)).use { zip ->
-                    var entry = zip.nextEntry
-                    while (entry != null) {
-                        fileCount++
-                        if (fileCount > 2000) throw IllegalArgumentException("ZIP contains too many files")
-                        val name = entry.name.replace('\\', '/')
-                        if (name.isBlank() || name.startsWith("/") || name.split('/').any { it == ".." || it.isEmpty() && !entry.isDirectory } || name.contains(":")) {
-                            throw IllegalArgumentException("Unsafe ZIP entry path")
-                        }
-                        if (!seenEntries.add(name.lowercase())) throw IllegalArgumentException("ZIP contains duplicate/conflicting paths")
-                        if (name.isNotBlank()) {
-                            val target = File(staging, name)
-                            if (!target.canonicalPath.startsWith(staging.canonicalPath + File.separator)) {
-                                throw IllegalArgumentException("Unsafe ZIP path")
-                            }
-                            if (entry.isDirectory) target.mkdirs() else {
-                                target.parentFile?.mkdirs()
-                                target.outputStream().use { output ->
-                                    val buffer = ByteArray(8192)
-                                    while (true) {
-                                        val count = zip.read(buffer)
-                                        if (count < 0) break
-                                        totalBytes += count
-                                        if (totalBytes > 20L * 1024L * 1024L) throw IllegalArgumentException("Extension ZIP exceeds 20 MB")
-                                        output.write(buffer, 0, count)
-                                    }
-                                }
-                            }
-                        }
-                        zip.closeEntry()
-                        entry = zip.nextEntry
-                    }
-                }
-            } ?: throw IllegalArgumentException("Could not open selected ZIP")
-            var manifestFile = File(staging, "manifest.json")
-            if (!manifestFile.isFile) {
-                val nested = staging.listFiles()?.filter { it.isDirectory }?.singleOrNull()
-                if (nested != null && File(nested, "manifest.json").isFile) {
-                    nested.listFiles()?.forEach { it.renameTo(File(staging, it.name)) }
-                    nested.delete()
+            val input = contentResolver.openInputStream(uri)
+                ?: throw IllegalArgumentException("Could not open selected ZIP")
+            prepared = input.use { ExtensionInstaller.prepare(it, base) }
+            val candidate = prepared
+            val installAction = {
+                try {
+                    ExtensionInstaller.commit(candidate)
+                    prefs.edit().putBoolean(
+                        LightweightExtensionRuntime.enabledKey(candidate.destinationDirectory.name),
+                        false
+                    ).apply()
+                    AlertDialog.Builder(this)
+                        .setTitle(if (candidate.isUpdate) "Extension updated" else "Extension installed")
+                        .setMessage(
+                            "${candidate.name} v${candidate.version} installed disabled.\n\n" +
+                                "Manifest: V${candidate.manifestVersion}\n" +
+                                "Requested permissions:\n" +
+                                (candidate.requestedPermissions.joinToString("\n").ifBlank { "None" }) +
+                                "\n\nHost access:\n" +
+                                (candidate.hostPatterns.joinToString("\n").ifBlank { "None" }) +
+                                "\n\nReview permissions and compatibility before enabling."
+                        )
+                        .setPositiveButton("OK", null)
+                        .show()
+                } catch (error: Exception) {
+                    ExtensionInstaller.discard(candidate)
+                    AlertDialog.Builder(this).setTitle("Extension install failed")
+                        .setMessage(error.message ?: "Could not finish installation")
+                        .setPositiveButton("OK", null).show()
                 }
             }
-            manifestFile = File(staging, "manifest.json")
-            if (!manifestFile.isFile) throw IllegalArgumentException("manifest.json not found in ZIP")
-            if (manifestFile.length() > 256L * 1024L) throw IllegalArgumentException("manifest.json exceeds 256 KB")
-            val manifest = org.json.JSONObject(manifestFile.readText())
-            val manifestVersion = manifest.optInt("manifest_version", 0)
-            if (manifestVersion !in 2..3) throw IllegalArgumentException("Only Manifest V2/V3 packages are recognized")
-            val name = manifest.optString("name").trim()
-            val version = manifest.optString("version").trim()
-            if (name.isBlank() || version.isBlank()) throw IllegalArgumentException("Manifest name/version is missing")
-            val id = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').take(48).ifBlank { "extension" }
-            val destination = File(base, id)
-            val existingManifest = File(destination, "manifest.json")
-            val isUpdate = destination.isDirectory && existingManifest.isFile
-            val previousVersion = if (isUpdate) runCatching { org.json.JSONObject(existingManifest.readText()).optString("version") }.getOrDefault("?") else ""
-            val oldPermissions = if (isUpdate) runCatching {
-                val old = org.json.JSONObject(existingManifest.readText())
-                val arr = old.optJSONArray("permissions")
-                (0 until (arr?.length() ?: 0)).map { arr!!.optString(it) }.toSet()
-            }.getOrDefault(emptySet()) else emptySet()
-            val newPermissions = run {
-                val arr = manifest.optJSONArray("permissions")
-                (0 until (arr?.length() ?: 0)).map { arr!!.optString(it) }.toSet()
-            }
-            val addedPermissions = newPermissions - oldPermissions
-            val confirm = {
-                val backup = File(base, "backup-$id-${System.currentTimeMillis()}")
-                if (destination.exists() && !destination.renameTo(backup)) throw IllegalStateException("Could not safely stage existing extension for update")
-                if (!staging.renameTo(destination)) {
-                    if (backup.exists()) backup.renameTo(destination)
-                    throw IllegalStateException("Could not finalize extension install; previous version was preserved")
+            if (candidate.isUpdate) {
+                val newPermissionText = if (candidate.addedPermissions.isEmpty()) {
+                    "No new permissions detected."
+                } else {
+                    "New requested permissions:\n" + candidate.addedPermissions.joinToString("\n")
                 }
-                if (backup.exists()) backup.deleteRecursively()
-                prefs.edit().putBoolean(LightweightExtensionRuntime.enabledKey(id), false).apply()
-                AlertDialog.Builder(this).setTitle(if (isUpdate) "Extension updated" else "Extension installed")
-                    .setMessage("$name v$version installed disabled. Review permissions and site access before enabling. Chrome APIs/background workers are not supported.")
-                    .setPositiveButton("OK", null).show()
-            }
-            if (isUpdate) {
-                val permissionText = if (addedPermissions.isEmpty()) "No new API permissions detected." else "New requested permissions:\n" + addedPermissions.joinToString("\n")
                 AlertDialog.Builder(this).setTitle("Confirm extension update")
-                    .setMessage("$name: v$previousVersion → v$version\n$permissionText\n\nThe extension will be disabled after update. Continue?")
-                    .setPositiveButton("Update") { _, _ -> confirm() }
-                    .setNegativeButton("Cancel") { _, _ -> staging.deleteRecursively() }.show()
-            } else confirm()
-        } catch (e: Exception) {
-            staging.deleteRecursively()
+                    .setMessage(
+                        "${candidate.name}: v${candidate.previousVersion} → v${candidate.version}\n" +
+                            newPermissionText +
+                            "\n\nThe updated extension will be disabled until you enable it. Continue?"
+                    )
+                    .setPositiveButton("Update") { _, _ -> installAction() }
+                    .setNegativeButton("Cancel") { _, _ -> ExtensionInstaller.discard(candidate) }
+                    .show()
+            } else {
+                installAction()
+            }
+        } catch (error: Exception) {
+            prepared?.let { ExtensionInstaller.discard(it) }
             AlertDialog.Builder(this).setTitle("Extension install failed")
-                .setMessage(e.message ?: "Invalid or unsupported extension ZIP")
+                .setMessage(error.message ?: "Invalid or unsupported extension ZIP")
                 .setPositiveButton("OK", null).show()
         }
     }
