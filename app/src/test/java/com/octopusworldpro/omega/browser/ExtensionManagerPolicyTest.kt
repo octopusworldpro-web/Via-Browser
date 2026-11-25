@@ -17,6 +17,17 @@ class ExtensionManagerPolicyTest {
         } finally { dir.deleteRecursively() }
     }
 
+    @Test fun storagePermissionIsSupportedByPopupBridge() {
+        val dir = createTempDir()
+        try {
+            File(dir, "manifest.json").writeText("""{"manifest_version":3,"name":"Popup storage","version":"1","permissions":["storage"],"action":{"default_popup":"popup.html"},"content_scripts":[{"matches":["https://example.com/*"],"js":["content.js"]}]}""")
+            val info = ExtensionManagerPolicy.inspect(dir)
+            assertTrue(info.compatible)
+            assertNull(info.incompatibility)
+            assertTrue(info.requestedPermissions.contains("storage"))
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun marksBackgroundRuntimeAsIncompatible() {
         val dir = createTempDir()
         try {
