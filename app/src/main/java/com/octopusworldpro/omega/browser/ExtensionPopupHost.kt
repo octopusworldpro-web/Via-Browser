@@ -60,6 +60,12 @@ internal object ExtensionPopupHost {
             settings.setSupportMultipleWindows(false)
             addJavascriptInterface(StorageBridge(activity, id), "OmegaExtensionStorage")
             webViewClient = object : WebViewClient() {
+                @Suppress("DEPRECATION")
+                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                    val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return true
+                    return uri.host != "extension.local" || uri.scheme != "https" || !uri.path.orEmpty().startsWith("/$id/")
+                }
+
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val uri = request?.url ?: return true
                     return uri.host != "extension.local" || uri.scheme != "https" || uri.path.orEmpty().startsWith("/$id/").not()
@@ -70,7 +76,8 @@ internal object ExtensionPopupHost {
                     intercept(extensionDirectory, popupFile, id, popup, manifest, runCatching { Uri.parse(url) }.getOrNull())
 
                 override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? =
-                    intercept(extensionDirectory, popupFile, id, popup, manifest, request?.url)            }
+                    intercept(extensionDirectory, popupFile, id, popup, manifest, request?.url)
+            }
             webChromeClient = object : WebChromeClient() {
                 override fun onShowFileChooser(
                     view: WebView?,
