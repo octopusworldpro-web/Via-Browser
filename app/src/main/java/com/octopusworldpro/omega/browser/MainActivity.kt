@@ -611,41 +611,52 @@ class MainActivity : Activity() {
     }
 
     private fun showSettings() {
-        val items = arrayOf(
-            "Search engine: $searchEngine",
-            "JavaScript: ${if (javascriptEnabled) "On" else "Off"}",
-            "Desktop site: ${if (desktopMode) "On" else "Off"}",
-            "Clear browsing data",
-            "About"
-        )
-        AlertDialog.Builder(this).setTitle("Settings").setItems(items) { _, which ->
-            when (which) {
-                0 -> AlertDialog.Builder(this).setTitle("Search engine")
-                    .setItems(arrayOf("Google", "Bing", "DuckDuckGo")) { _, choice ->
-                        searchEngine = arrayOf("Google", "Bing", "DuckDuckGo")[choice]
-                        persistSavedData()
-                        Toast.makeText(this, "Search engine: $searchEngine", Toast.LENGTH_SHORT).show()
-                    }.show()
-                1 -> { javascriptEnabled = !javascriptEnabled; web.settings.javaScriptEnabled = javascriptEnabled; persistSavedData(); showSettings() }
-                2 -> {
-                    desktopMode = !desktopMode
-                    web.settings.userAgentString = if (desktopMode) desktopUserAgent() else identityUserAgent.ifBlank { android.webkit.WebSettings.getDefaultUserAgent(this) }
-                    persistSavedData()
-                    web.reload()
-                    showSettings()
-                }
-                3 -> AlertDialog.Builder(this).setTitle("Clear browsing data?")
-                    .setMessage("Clear local history, bookmarks, cookies and cached website files?")
+        val options = listOf(
+            SheetAction("⌕", "Search engine", searchEngine) {
+                showActionSheet(
+                    "Search engine",
+                    "Choose your default search provider",
+                    listOf("Google", "Bing", "DuckDuckGo").map { engine ->
+                        SheetAction(if (engine == searchEngine) "✓" else "○", engine,
+                            if (engine == searchEngine) "Currently selected" else "Use $engine for searches") {
+                            searchEngine = engine
+                            persistSavedData()
+                            showSettings()
+                        }
+                    }
+                )
+            },
+            SheetAction("JS", "JavaScript", if (javascriptEnabled) "Enabled" else "Disabled") {
+                javascriptEnabled = !javascriptEnabled
+                web.settings.javaScriptEnabled = javascriptEnabled
+                persistSavedData()
+                showSettings()
+            },
+            SheetAction("▣", "Desktop site", if (desktopMode) "Enabled" else "Disabled") {
+                desktopMode = !desktopMode
+                web.settings.userAgentString = if (desktopMode) desktopUserAgent()
+                    else identityUserAgent.ifBlank { android.webkit.WebSettings.getDefaultUserAgent(this) }
+                persistSavedData()
+                if (web.visibility == View.VISIBLE) web.reload()
+                showSettings()
+            },
+            SheetAction("⌫", "Clear browsing data", "History, bookmarks, cookies and cache") {
+                AlertDialog.Builder(this).setTitle("Clear browsing data?")
+                    .setMessage("This clears local history, bookmarks, cookies and cached website files.")
                     .setPositiveButton("Clear") { _, _ ->
-                        history.clear(); bookmarks.clear(); persistSavedData()
-                        web.clearCache(true); web.clearHistory()
+                        history.clear()
+                        bookmarks.clear()
+                        persistSavedData()
+                        web.clearCache(true)
+                        web.clearHistory()
                         android.webkit.CookieManager.getInstance().removeAllCookies(null)
                         android.webkit.CookieManager.getInstance().flush()
                         Toast.makeText(this, "Browsing data cleared", Toast.LENGTH_SHORT).show()
                     }.setNegativeButton("Cancel", null).show()
-                4 -> showAbout()
-            }
-        }.setNegativeButton("Done", null).show()
+            },
+            SheetAction("ⓘ", "About OmegA", "Version and project information") { showAbout() }
+        )
+        showActionSheet("Settings", "Customize your browser", options)
     }
 
     private fun showIdentity() {
