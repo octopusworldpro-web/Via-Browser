@@ -65,28 +65,12 @@ internal object ExtensionPopupHost {
                     return uri.host != "extension.local" || uri.scheme != "https" || uri.path.orEmpty().startsWith("/$id/").not()
                 }
 
-                override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
-                    val uri = request?.url ?: return null
-                    if (uri.scheme != "https" || uri.host != "extension.local") return blocked()
-                    val path = uri.path.orEmpty().removePrefix("/$id/").ifBlank { popup }
-                    if (!uri.path.orEmpty().startsWith("/$id/")) return blocked()
-                    val file = safeFile(extensionDirectory, path) ?: return blocked()
-                    if (!file.isFile || file.length() > 8L * 1024L * 1024L) return blocked()
-                    return try {
-                        var bytes = file.readBytes()
-                        val mime = mimeType(file.name)
-                        if (file.canonicalFile == popupFile.canonicalFile && mime == "text/html") {
-                            val html = bytes.toString(Charsets.UTF_8)
-                            val bootstrap = bootstrapScript(id, manifest)
-                            val injected = if (html.contains("<head", true)) {
-                                html.replaceFirst(Regex("(?i)<head[^>]*>"), "$0<script>$bootstrap</script>")
-                            } else "<html><head><script>$bootstrap</script></head><body>$html</body></html>"
-                            bytes = injected.toByteArray(Charsets.UTF_8)
-                        }
-                        WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
-                    } catch (_: Exception) { blocked() }
-                }
-            }
+                @Suppress("DEPRECATION")
+                override fun shouldInterceptRequest(view: WebView?, url: String?): WebResourceResponse? =
+                    intercept(extensionDirectory, popupFile, id, popup, manifest, runCatching { Uri.parse(url) }.getOrNull())
+
+                override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? =
+                    intercept(extensionDirectory, popupFile, id, popup, manifest, request?.url)            }
             webChromeClient = object : WebChromeClient() {
                 override fun onShowFileChooser(
                     view: WebView?,
@@ -113,6 +97,36 @@ internal object ExtensionPopupHost {
         dialog.show()
         dialog.window?.setLayout((activity.resources.displayMetrics.widthPixels * 0.92f).toInt(), (activity.resources.displayMetrics.heightPixels * 0.72f).toInt())
         web.loadUrl("$HOST/$id/$popup")
+    }
+
+    private fun intercept(
+        extensionDirectory: File,
+        popupFile: File,
+        id: String,
+        popup: String,
+        manifest: JSONObject,
+        uri: Uri?
+    ): WebResourceResponse? {
+        uri ?: return blocked()
+        if (uri.scheme != "https" || uri.host != "extension.local") return null
+        val requestPath = uri.path.orEmpty()
+        if (!requestPath.startsWith("/$id/")) return blocked()
+        val relative = requestPath.removePrefix("/$id/").ifBlank { popup }
+        val file = safeFile(extensionDirectory, relative) ?: return blocked()
+        if (!file.isFile || file.length() > 8L * 1024L * 1024L) return blocked()
+        return try {
+            var bytes = file.readBytes()
+            val mime = mimeType(file.name)
+            if (file.canonicalFile == popupFile.canonicalFile && mime == "text/html") {
+                val html = bytes.toString(Charsets.UTF_8)
+                val bootstrap = bootstrapScript(id, manifest)
+                val injected = if (html.contains("<head", true)) {
+                    html.replaceFirst(Regex("(?i)<head[^>]*>"), "$0<script>$bootstrap</script>")
+                } else "<html><head><script>$bootstrap</script></head><body>$html</body></html>"
+                bytes = injected.toByteArray(Charsets.UTF_8)
+            }
+            WebResourceResponse(mime, "UTF-8", ByteArrayInputStream(bytes))
+        } catch (_: Exception) { blocked() }
     }
 
     private fun bootstrapScript(id: String, manifest: JSONObject): String {
