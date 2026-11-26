@@ -32,14 +32,12 @@ internal object ExtensionManagerPolicy {
 
         val permissions = mutableListOf<String>()
         val api = manifest.optJSONArray("permissions")
-        if (api != null) for (i in 0 until api.length()) permissions += api.optString(i)
+        if (api != null) for (i in 0 until api.length()) {
+            val permission = api.optString(i)
+            permissions += if (permission.contains("://") || permission == "<all_urls>") "host:$permission" else permission
+        }
         val hosts = manifest.optJSONArray("host_permissions")
         if (hosts != null) for (i in 0 until hosts.length()) permissions += "host:${hosts.optString(i)}"
-        val legacyHosts = manifest.optJSONArray("permissions")
-        if (legacyHosts != null) for (i in 0 until legacyHosts.length()) {
-            val p = legacyHosts.optString(i)
-            if (p.contains("://") || p == "<all_urls>") permissions += "host:$p"
-        }
         val contentScripts = manifest.optJSONArray("content_scripts")
         val hasScripts = contentScripts != null && contentScripts.length() > 0
         val action = manifest.optJSONObject("action") ?: manifest.optJSONObject("browser_action")
