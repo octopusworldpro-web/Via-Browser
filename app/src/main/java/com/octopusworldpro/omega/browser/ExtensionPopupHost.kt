@@ -22,8 +22,8 @@ import java.util.Locale
  * Small popup host for locally installed extensions.
  *
  * Only the extension's own popup origin receives the bridge. This deliberately
- * exposes runtime metadata and namespaced local storage, never cookies,
- * credentials, arbitrary native calls, or background execution.
+ * exposes runtime metadata, namespaced storage, and narrowly scoped Facebook
+ * cookie / active-tab APIs after explicit per-extension permission approval.
  */
 internal object ExtensionPopupHost {
     private const val HOST = "https://extension.local"
