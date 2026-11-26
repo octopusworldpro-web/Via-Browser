@@ -31,6 +31,8 @@ internal object ExtensionPopupHost {
     fun show(
         activity: Activity,
         extensionDirectory: File,
+        currentTabUrl: () -> String,
+        updateCurrentTab: (String) -> Unit,
         onFileChooser: (android.webkit.ValueCallback<Array<Uri>>, android.webkit.WebChromeClient.FileChooserParams?) -> Boolean
     ) {
         val manifestFile = File(extensionDirectory, "manifest.json")
@@ -59,6 +61,7 @@ internal object ExtensionPopupHost {
             settings.javaScriptCanOpenWindowsAutomatically = false
             settings.setSupportMultipleWindows(false)
             addJavascriptInterface(StorageBridge(activity, id), "OmegaExtensionStorage")
+            addJavascriptInterface(ExtensionBrowserApiBridge(activity, id, currentTabUrl, updateCurrentTab), "OmegaBrowserApi")
             webViewClient = object : WebViewClient() {
                 @Suppress("DEPRECATION")
                 override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
@@ -174,6 +177,17 @@ internal object ExtensionPopupHost {
               };
               window.chrome.storage = window.chrome.storage || {};
               window.chrome.storage.local = storage;
+              const cookies = {
+                getAll: function(details, callback) { const value = JSON.parse(OmegaBrowserApi.cookiesGetAll(JSON.stringify(details || {}))); if (typeof callback === 'function') setTimeout(() => callback(value), 0); return Promise.resolve(value); },
+                set: function(details, callback) { const value = JSON.parse(OmegaBrowserApi.cookiesSet(JSON.stringify(details || {}))); if (typeof callback === 'function') setTimeout(() => callback(value), 0); return Promise.resolve(value); },
+                remove: function(details, callback) { const value = JSON.parse(OmegaBrowserApi.cookiesRemove(JSON.stringify(details || {}))); if (typeof callback === 'function') setTimeout(() => callback(value), 0); return Promise.resolve(value); }
+              };
+              const tabs = {
+                query: function(queryInfo, callback) { const value = JSON.parse(OmegaBrowserApi.tabsQuery(JSON.stringify(queryInfo || {}))); if (typeof callback === 'function') setTimeout(() => callback(value), 0); return Promise.resolve(value); },
+                update: function(tabId, updateProperties, callback) { if (typeof tabId === 'object') { callback = updateProperties; updateProperties = tabId; tabId = 1; } const value = JSON.parse(OmegaBrowserApi.tabsUpdate(Number(tabId || 1), JSON.stringify(updateProperties || {}))); if (typeof callback === 'function') setTimeout(() => callback(value), 0); return Promise.resolve(value); }
+              };
+              window.chrome.cookies = cookies;
+              window.chrome.tabs = tabs;
               window.browser = window.browser || window.chrome;
             })();
         """.trimIndent()
