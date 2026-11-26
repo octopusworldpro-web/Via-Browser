@@ -46,7 +46,10 @@ internal object ExtensionManagerPolicy {
         val backgroundScripts = background?.optJSONArray("scripts")
         val hasActiveBackground = background?.optString("service_worker").orEmpty().isNotBlank() ||
             background?.optString("page").orEmpty().isNotBlank() ||
-            (backgroundScripts != null && backgroundScripts.length() > 0)
+            (backgroundScripts != null && (0 until backgroundScripts.length()).any { index ->
+                val script = File(directory, backgroundScripts.optString(index))
+                script.isFile && script.length() > 0
+            })
         val supportedPopupApis = setOf("storage", "cookies", "activeTab", "tabs")
         val unsupportedApi = permissions.any { !it.startsWith("host:") && it !in supportedPopupApis }
         val incompatible = (!hasScripts && !hasPopup) || hasActiveBackground || unsupportedApi
