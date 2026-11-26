@@ -728,7 +728,11 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle("Open extension popup")
             .setItems(popupExtensions.map { it.name }.toTypedArray()) { _, index ->
                 val selected = popupExtensions[index]
-                ExtensionPopupHost.show(this, selected) { callback, params ->
+                ExtensionPopupHost.show(this, selected, { currentUrl }, { target ->
+                    currentUrl = target
+                    showBrowser()
+                    web.loadUrl(target)
+                }) { callback, params ->
                     filePathCallback?.onReceiveValue(null)
                     filePathCallback = callback
                     try {
@@ -774,12 +778,33 @@ class MainActivity : Activity() {
                 }
                 val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
                     .setMessage(detailText)
-                    .setPositiveButton(if (enabled) "Disable" else "Enable", if (!enabled && info?.compatible != true) null else { _, _ ->
-                        prefs.edit().putBoolean(enabledKey, !enabled).apply()
-                        Toast.makeText(this, if (enabled) "Extension disabled" else "Extension enabled", Toast.LENGTH_SHORT).show()
-                        if (web.visibility == View.VISIBLE) web.reload()
-                        showExtensions()
-                    }).setNeutralButton("Site access") { _, _ ->
+                    .setPositiveButton(if (enabled) "Disable" else "Review & enable") { _, _ ->
+                        if (enabled) {
+                            prefs.edit().putBoolean(enabledKey, false).apply()
+                            Toast.makeText(this, "Extension disabled", Toast.LENGTH_SHORT).show()
+                            showExtensions()
+                        } else {
+                            val permissionItems = (info?.requestedPermissions ?: emptyList()).filter { !it.startsWith("host:") }.distinct()
+                            val hostItems = info?.hostPatterns.orEmpty()
+                            val labelsForConsent = permissionItems + hostItems.map { "Website access: " + it }
+                            val checked = BooleanArray(labelsForConsent.size)
+                            AlertDialog.Builder(this).setTitle("Approve extension permissions")
+                                .setMessage("Facebook cookie access can read and change your Facebook login cookies. Approve only if you trust this extension.")
+                                .setMultiChoiceItems(labelsForConsent.toTypedArray(), checked) { _, index, value -> checked[index] = value }
+                                .setPositiveButton("Approve") { _, _ ->
+                                    val edit = prefs.edit()
+                                    permissionItems.forEachIndexed { index, permission -> edit.putBoolean("extension_permission_" + extensionId + "_" + permission, checked[index]) }
+                                    val facebookApproved = hostItems.indices.any { index -> checked[permissionItems.size + index] && hostItems[index].contains("facebook.com") }
+                                    val cookiesApproved = permissionItems.indices.any { permissionItems[it] == "cookies" && checked[it] }
+                                    val tabsApproved = permissionItems.indices.any { (permissionItems[it] == "tabs" || permissionItems[it] == "activeTab") && checked[it] }
+                                    edit.putBoolean("extension_host_" + extensionId + "_facebook", facebookApproved)
+                                    edit.putBoolean(enabledKey, cookiesApproved && tabsApproved && facebookApproved)
+                                    edit.apply()
+                                    Toast.makeText(this, if (cookiesApproved && tabsApproved && facebookApproved) "Extension enabled" else "Required permissions not approved", Toast.LENGTH_LONG).show()
+                                    showExtensions()
+                                }.setNegativeButton("Cancel", null).show()
+                        }
+                    }.setNeutralButton("Site access") { _, _ ->
                         val modes = arrayOf("Block all sites", "On click — current site once", "Selected sites — add current site", "All matching sites", "Clear extension data")
                         val currentOrigin = try { val u = Uri.parse(currentUrl); "${u.scheme}://${u.authority}" } catch (_: Exception) { "" }
                         AlertDialog.Builder(this).setTitle("Site access")
