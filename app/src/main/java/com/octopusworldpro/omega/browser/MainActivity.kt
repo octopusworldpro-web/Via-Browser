@@ -772,9 +772,13 @@ class MainActivity : Activity() {
                 val requested = info?.requestedPermissions?.joinToString("\n") ?: "Could not parse package metadata"
                 val hostPatterns = info?.hostPatterns?.joinToString("\n") ?: "None"
                 val status = if (info == null) "Error: package metadata could not be read" else if (info.compatible) "Partial: top-frame page-context content scripts only" else "Incompatible: ${info.incompatibility}"
+                val grantedPermissions = info?.requestedPermissions.orEmpty().filter { permission ->
+                    if (permission.startsWith("host:")) prefs.getBoolean("extension_host_" + extensionId + "_facebook", false)
+                    else prefs.getBoolean("extension_permission_" + extensionId + "_" + permission, false)
+                }
                 val detailText = buildString {
                     append("Name: ${info?.name ?: dir.name}\nVersion: ${info?.version ?: "?"}\nState: ${if (enabled) "Enabled" else "Disabled"}\nDescription: ${info?.description?.ifBlank { "Not provided" } ?: "Not provided"}\nAuthor: ${info?.author?.ifBlank { "Not provided" } ?: "Not provided"}\nSource: Local ZIP\nStatus: $status\n")
-                    append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (package): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions: none (site access is controlled separately).\n\nScripts execute in webpage context; no Chrome APIs, background workers or isolated worlds.")
+                    append("Package size: ${info?.storageBytes ?: 0} bytes\nSHA-256 (package): ${info?.digest ?: "Unavailable"}\n\nRequested permissions:\n${requested.ifBlank { "None"}}\n\nHost patterns:\n${hostPatterns.ifBlank { "None"}}\n\nGranted permissions:\n${grantedPermissions.joinToString("\n").ifBlank { "None"}}\n\nPopup APIs: storage, cookies (Facebook only), tabs (active Facebook tab only). Background workers and isolated content-script worlds are not supported.")
                 }
                 val detailDialog = AlertDialog.Builder(this).setTitle(labels[which])
                     .setMessage(detailText)
