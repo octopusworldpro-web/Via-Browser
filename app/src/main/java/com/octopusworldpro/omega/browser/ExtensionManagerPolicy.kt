@@ -42,13 +42,19 @@ internal object ExtensionManagerPolicy {
         }
         val contentScripts = manifest.optJSONArray("content_scripts")
         val hasScripts = contentScripts != null && contentScripts.length() > 0
-        val background = manifest.has("background")
-        val supportedPopupApis = setOf("storage")
+        val action = manifest.optJSONObject("action") ?: manifest.optJSONObject("browser_action")
+        val hasPopup = action?.optString("default_popup").orEmpty().isNotBlank()
+        val background = manifest.optJSONObject("background")
+        val backgroundScripts = background?.optJSONArray("scripts")
+        val hasActiveBackground = background?.optString("service_worker").orEmpty().isNotBlank() ||
+            background?.optString("page").orEmpty().isNotBlank() ||
+            (backgroundScripts != null && backgroundScripts.length() > 0)
+        val supportedPopupApis = setOf("storage", "cookies", "activeTab", "tabs")
         val unsupportedApi = permissions.any { !it.startsWith("host:") && it !in supportedPopupApis }
-        val incompatible = !hasScripts || background || unsupportedApi
+        val incompatible = (!hasScripts && !hasPopup) || hasActiveBackground || unsupportedApi
         val reason = when {
-            !hasScripts -> "No supported content_scripts declared"
-            background -> "Background scripts/service workers are not supported"
+            !hasScripts && !hasPopup -> "No popup or content scripts declared"
+            hasActiveBackground -> "Active background scripts/service workers are not supported"
             unsupportedApi -> "One or more requested Chrome APIs are not supported"
             else -> null
         }
